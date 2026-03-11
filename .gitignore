@@ -1,5 +1,23 @@
-
 # 数据库
 universe.db
 *.db
 instance/
+
+# 缓存
+__pycache__/
+*.pyc
+*.pyo
+
+# 日志
+*.log
+flask.log
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
