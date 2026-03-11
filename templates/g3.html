@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>爱心之桶：源头之心</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #fcfaf5; font-family: 'STHeiti', 'Microsoft YaHei', sans-serif; touch-action: none; }
+        #ui { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
+        
+        .hud { 
+            position: absolute; 
+            top: 15px; 
+            left: 15px; 
+            text-align: left; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 5px;
+        }
+        #lvl-tag { font-size: 12px; background: #333; color: #fff; display: inline-block; padding: 2px 8px; border-radius: 4px; width: fit-content; }
+        #score-val { font-size: 24px; font-weight: bold; color: #d35400; text-shadow: 1px 1px #fff; }
+        #timer-val { font-size: 16px; color: #c0392b; font-weight: bold; }
+        #fail-val { font-size: 14px; color: #7f8c8d; font-weight: bold; } 
+        
+        .mana-bar { display: flex; justify-content: flex-start; gap: 4px; margin-top: 5px; }
+        .mana-slot { width: 10px; height: 10px; border: 2px solid #333; border-radius: 50%; background: #fff; }
+        .mana-slot.active { background: #e74c3c; border-color: #e74c3c; transform: scale(1.2); }
+        
+        #combo-tag { position: absolute; left: 15px; top: 140px; font-size: 20px; color: #e74c3c; font-style: italic; font-weight: bold; opacity: 0; }
+        #status-bubble { position: absolute; top: 80px; right: 20px; width: 150px; text-align: right; font-weight: bold; font-size: 18px; pointer-events: none; }
+        
+        #fire-btn { 
+            position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%);
+            padding: 12px 30px; background: #f39c12; color: #fff; border: 4px solid #333;
+            border-radius: 10px; font-size: 18px; font-weight: bold; pointer-events: auto;
+            display: none; animation: pulse 0.3s infinite; box-shadow: 5px 5px 0px #333;
+        }
+        @keyframes pulse { 0%{transform: translateX(-50%) scale(1);} 50%{transform: translateX(-50%) scale(1.1);} 100%{transform: translateX(-50%) scale(1);} }
+        
+        #narrator-bubble { position: absolute; bottom: 160px; width: 80%; left: 10%; text-align: center; font-weight: bold; font-size: 18px; color: #e67e22; opacity: 0; transition: 0.5s; }
+        
+        #overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.98); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 100; text-align: center; pointer-events: auto; }
+        .btn-action { padding: 15px 40px; border: 4px solid #333; background: #f1c40f; font-size: 20px; font-weight: bold; cursor: pointer; box-shadow: 6px 6px 0px #333; margin-top: 20px; }
+    </style>
+</head>
+<body>
+
+<div id="ui">
+    <div class="hud">
+        <div id="lvl-tag">载入中...</div>
+        <div id="score-val">0 / 0</div>
+        <div id="timer-val">残存理智: 0s</div>
+        <div id="fail-val">翻桶记录: 0</div>
+        <div class="mana-bar" id="mana-container"></div>
+    </div>
+    <div id="combo-tag">Combo x1</div>
+    <div id="status-bubble"></div>
+    <div id="narrator-bubble"></div>
+    <button id="fire-btn">释放：究极圣光！</button>
+</div>
+
+<div id="overlay">
+    <div id="os-icon" style="font-size: 80px;">🙄</div>
+    <h1 id="os-title"></h1>
+    <p id="os-desc" style="color: #666; font-size: 18px; max-width: 80%; line-height: 1.5;"></p>
+    <button class="btn-action" id="main-btn" onclick="handleMenu()">点击逆天改命</button>
+</div>
+
+<canvas id="gameCanvas"></canvas>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const scoreText = document.getElementById('score-val');
+    const timerText = document.getElementById('timer-val');
+    const failText = document.getElementById('fail-val');
+    const lvlTag = document.getElementById('lvl-tag');
+    const manaContainer = document.getElementById('mana-container');
+    const fireBtn = document.getElementById('fire-btn');
+    const overlay = document.getElementById('overlay');
+    const statusBubble = document.getElementById('status-bubble');
+    const narratorBubble = document.getElementById('narrator-bubble');
+    const comboTag = document.getElementById('combo-tag');
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const LEVELS = [
+        { name: "Lvl.1 觉醒之桶", goal: 10, time: 60, req: 3, color: '#3498db' },
+        { name: "Lvl.2 试炼之勺", goal: 20, time: 60, req: 5, color: '#9b59b6' },
+        { name: "Lvl.3 证道之鼎", goal: 100, time: 120, req: 10, color: '#2ecc71' }
+    ];
+
+    const WEIRD_STUFF = [
+        { icon: '⏰', effect: 'time', color: '#27ae60', colored: true, msg: "续命之钟！" },
+        { icon: '🦆', effect: 'mag', color: '#2980b9', colored: true, msg: "嘎嘎黑洞！" },
+        { icon: '✨', effect: 'fill', color: '#f1c40f', colored: true, msg: "满能量！" },
+        { icon: '💎', effect: 'diamond', color: '#3498db', colored: true, msg: "天降财宝！" },
+        { icon: '🚀', effect: 'speed', color: '#e67e22', colored: true, msg: "动力澎湃！" },
+        { icon: '🥘', effect: 'big', color: '#d35400', colored: true, msg: "变胖了！" },
+        { icon: '🍭', effect: 'double', color: '#e91e63', colored: true, msg: "双倍积分！" },
+        { icon: '⏳', effect: 'drain', msg: "时间流逝！" }, 
+        { icon: '👻', effect: 'inv', msg: "左右不分术！" }, 
+        { icon: '🐢', effect: 'slow', msg: "一亿吨的忧郁！" },
+        { icon: '❄️', effect: 'freeze', msg: "绝对零度！" },
+        { icon: '💣', effect: 'boom', msg: "能量清空！" }
+    ];
+
+    let curLvl = 0, score = 0, energy = 0, timeLeft = 60, failCount = 0, gameActive = false;
+    let items = [], beam = null, vesselX = canvas.width / 2, mouseX = canvas.width / 2;
+    let buff = { inv: 0, mag: 0, slow: 0, speed: 0, big: 0, freeze: 0 };
+    let shakeAmount = 0, vesselSquash = 1;
+    let combo = 0, lastHitTime = 0, itemQueue = [];
+
+    const shaky = () => Math.random() * 3 - 1.5;
+
+    // 手绘描边心形函数
+    function drawSketchyHeart(x, y, size, fill, stroke) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.fillStyle = fill;
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = 4;
+        ctx.lineJoin = 'round';
+
+        const drawLoop = () => {
+            ctx.beginPath();
+            ctx.moveTo(0 + shaky(), 15 + shaky());
+            // 左半边
+            ctx.bezierCurveTo(-size + shaky(), -size/2 + shaky(), -size*1.5 + shaky(), size/2 + shaky(), 0 + shaky(), size + shaky());
+            // 右半边
+            ctx.bezierCurveTo(size*1.5 + shaky(), size/2 + shaky(), size + shaky(), -size/2 + shaky(), 0 + shaky(), 15 + shaky());
+            ctx.fill();
+            ctx.stroke();
+        };
+        drawLoop(); // 绘制一次带抖动的轮廓
+        ctx.restore();
+    }
+
+    function getUniqueItem() {
+        if (itemQueue.length === 0) itemQueue = [...WEIRD_STUFF].sort(() => Math.random() - 0.5);
+        return itemQueue.pop();
+    }
+
+    // 绘制顶部的源头大爱心
+    function drawSourceHeart(x, y) {
+        ctx.save();
+        const pulse = 1 + Math.sin(Date.now() / 200) * 0.05;
+        const size = 35 * pulse;
+
+        // 绘制橙色发散光芒
+        ctx.strokeStyle = '#e67e22';
+        ctx.lineWidth = 2;
+        for(let i=0; i<10; i++) {
+            let a = (i * Math.PI / 5) + Date.now()/1000;
+            ctx.beginPath();
+            ctx.moveTo(x + Math.cos(a)*50, y + Math.sin(a)*50);
+            ctx.lineTo(x + Math.cos(a)*75 + shaky(), y + Math.sin(a)*75 + shaky());
+            ctx.stroke();
+        }
+
+        // 绘制大爱心本体
+        drawSketchyHeart(x, y - 20, size, '#f1c40f', '#333');
+        ctx.restore();
+    }
+
+    function drawHeart(x, y, s=20) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.fillStyle = '#e74c3c';
+        ctx.strokeStyle = '#333';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.bezierCurveTo(-s/2, -s/2, -s, s/4, 0, s);
+        ctx.bezierCurveTo(s, s/4, s/2, -s/2, 0, 0);
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    function drawVessel(x, y) {
+        ctx.save();
+        ctx.translate(x, y);
+        const baseSize = buff.big > 0 ? 1.4 : 1;
+        const s = (1 + Math.sin(Date.now()/150)*0.07) * vesselSquash * baseSize;
+        ctx.scale(s, 1/s);
+        ctx.lineWidth = 4 / baseSize;
+        ctx.strokeStyle = '#333';
+        ctx.fillStyle = LEVELS[curLvl].color;
+        ctx.beginPath();
+        ctx.moveTo(-35,-35); ctx.quadraticCurveTo(-40, 10, -35, 45);
+        ctx.lineTo(35, 45); ctx.quadraticCurveTo(40, 10, 35,-35);
+        ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.ellipse(0,-35,35,10,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+        ctx.restore();
+    }
+
+    function drawDust(x, y) {
+        ctx.save(); ctx.translate(x, y);
+        ctx.strokeStyle = '#333'; ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        for(let i=0; i<6; i++) { ctx.moveTo(shaky()*8, shaky()*8); ctx.lineTo(shaky()*8, shaky()*8); }
+        ctx.stroke(); ctx.restore();
+    }
+
+    class Drop {
+        constructor(type, x, y, data = null) {
+            this.type = type; this.data = data;
+            this.x = x || Math.random() * (canvas.width - 60) + 30;
+            this.y = y || -50;
+            const spd = 3.5 + curLvl;
+            this.vx = data?.isExp ? (Math.random() - 0.5) * 16 : 0;
+            this.vy = data?.isExp ? -Math.random() * 10 - 4 : spd + Math.random();
+            this.grav = data?.isExp ? 0.35 : 0;
+        }
+        update() {
+            if (buff.freeze > 0 && !this.data?.isExp) return;
+            this.x += this.vx; this.y += this.vy; this.vy += this.grav;
+            if (this.x < 15 || this.x > canvas.width - 15) { this.vx *= -0.8; this.x = this.x < 15 ? 16 : canvas.width - 16; }
+            if(!this.data?.isExp) this.x += Math.sin(this.y/40)*2;
+            if(buff.mag > 0 && this.type === 'heart') {
+                this.x += (vesselX - this.x) * 0.18; this.y += (canvas.height - 100 - this.y) * 0.18;
+            }
+        }
+        draw() {
+            if(this.type === 'heart') drawHeart(this.x, this.y);
+            else if(this.type === 'dust') drawDust(this.x, this.y);
+            else if(this.type === 'weird') {
+                ctx.save(); ctx.font = '32px Arial'; ctx.textAlign = 'center';
+                ctx.fillStyle = this.data.colored ? this.data.color : '#333';
+                ctx.fillText(this.data.icon, this.x, this.y); ctx.restore();
+            }
+        }
+    }
+
+    function initLevel(idx) {
+        curLvl = idx; const cfg = LEVELS[idx];
+        score = 0; energy = 0; timeLeft = cfg.time; items = []; beam = null; 
+        buff = { inv: 0, mag: 0, slow: 0, speed: 0, big: 0, freeze: 0 };
+        combo = 0; lastHitTime = 0; vesselX = canvas.width / 2; mouseX = canvas.width / 2;
+        lvlTag.innerText = cfg.name;
+        scoreText.innerText = `爱意值: 0 / ${cfg.goal}`;
+        failText.innerText = `翻桶记录: ${failCount}`;
+        overlay.style.display = 'none';
+        manaContainer.innerHTML = '';
+        for(let i=0; i<cfg.req; i++) { const s = document.createElement('div'); s.className = 'mana-slot'; manaContainer.appendChild(s); }
+        updateManaUI(); gameActive = true;
+    }
+
+    function update() {
+        ctx.save();
+        if(shakeAmount > 0) { ctx.translate(Math.random()*shakeAmount-shakeAmount/2, Math.random()*shakeAmount-shakeAmount/2); shakeAmount *= 0.9; }
+        if(gameActive) {
+            ctx.clearRect(-100,-100,canvas.width+200,canvas.height+200);
+            timeLeft -= 1/60; timerText.innerText = `残存理智: ${Math.ceil(timeLeft)}s`;
+            if(timeLeft <= 0) endGame(false);
+            
+            drawSourceHeart(canvas.width / 2, 110);
+
+            if(beam) {
+                ctx.fillStyle = 'rgba(243, 156, 18, 0.4)'; ctx.fillRect(beam.x - 20, 150, 40, canvas.height);
+                if(Math.abs(beam.x - canvas.width/2) < 70 && !beam.hit) {
+                    beam.hit = true; shakeAmount = 10;
+                    let now = Date.now(); if(now - lastHitTime < 2500) combo++; else combo = 1;
+                    lastHitTime = now;
+                    if(combo > 1) { comboTag.innerText = `Combo x${combo}`; comboTag.style.opacity = 1; setTimeout(()=>comboTag.style.opacity = 0, 1000); }
+                    let num = Math.min(2 + combo, 6);
+                    for(let i=0; i<num; i++) items.push(new Drop('weird', canvas.width/2, 120, {...getUniqueItem(), isExp: true}));
+                }
+                beam.life--; if(beam.life <= 0) beam = null;
+            }
+            let tx = (buff.inv > 0) ? canvas.width - mouseX : mouseX;
+            let ms = buff.speed > 0 ? 0.45 : (buff.slow > 0 ? 0.04 : 0.28);
+            vesselX += (tx - vesselX) * ms; if(vesselSquash > 1) vesselSquash -= 0.05;
+            drawVessel(vesselX, canvas.height - 100);
+            const cfg = LEVELS[curLvl]; const prg = score / cfg.goal;
+            for(let i=items.length-1; i>=0; i--) {
+                let it = items[i]; it.update(); it.draw();
+                if(it.y > canvas.height - 130 && it.y < canvas.height - 70 && Math.abs(it.x - vesselX) < (buff.big ? 60 : 45)) {
+                    vesselSquash = 1.3; if(it.type === 'heart') { if(energy < cfg.req) energy++; score += 1; updateManaUI(); }
+                    else if(it.type === 'weird') { 
+                        const d = it.data;
+                        statusBubble.innerText = d.msg; statusBubble.style.color = d.color || '#333';
+                        setTimeout(() => statusBubble.innerText = '', 2000);
+                        if(d.effect === 'time') timeLeft += 12;
+                        if(d.effect === 'drain') timeLeft -= 8;
+                        if(d.effect === 'inv') buff.inv = 350;
+                        if(d.effect === 'mag') buff.mag = 450;
+                        if(d.effect === 'slow') buff.slow = 300;
+                        if(d.effect === 'fill') energy = cfg.req;
+                        if(d.effect === 'speed') buff.speed = 300;
+                        if(d.effect === 'big') buff.big = 400;
+                        if(d.effect === 'freeze') buff.freeze = 200;
+                        if(d.effect === 'diamond') score += 15;
+                        if(d.effect === 'boom') { energy = 0; shakeAmount = 10; }
+                        updateManaUI();
+                        score += 2; 
+                    } else score = Math.max(0, score - 5);
+                    items.splice(i, 1); scoreText.innerText = `爱意值: ${score} / ${cfg.goal}`;
+                    if(score >= cfg.goal) endGame(true);
+                } else if(it.y > canvas.height) items.splice(i, 1);
+            }
+            const wave = (Math.sin(Date.now() / 1500) + 1) / 2;
+            if(Math.random() < (0.04 + wave * 0.06) * Math.max(0.1, 1 - prg)) {
+                if(Math.random() < (0.75 - prg * 0.7)) items.push(new Drop('heart')); else items.push(new Drop('dust'));
+            }
+            if(buff.inv > 0) buff.inv--; if(buff.mag > 0) buff.mag--; if(buff.slow > 0) buff.slow--;
+            if(buff.speed > 0) buff.speed--; if(buff.big > 0) buff.big--; if(buff.freeze > 0) buff.freeze--;
+        }
+        ctx.restore(); requestAnimationFrame(update);
+    }
+
+    function updateManaUI() {
+        const slots = document.querySelectorAll('.mana-slot');
+        slots.forEach((s, i) => i < energy ? s.classList.add('active') : s.classList.remove('active'));
+        fireBtn.style.display = energy >= LEVELS[curLvl].req ? 'block' : 'none';
+    }
+
+    function endGame(win) {
+        gameActive = false; overlay.style.display = 'flex';
+        const nb = document.querySelector('.btn-action');
+        if(win) {
+            if(curLvl < 2) { 
+                document.getElementById('os-icon').innerText = "😝"; document.getElementById('os-title').innerText = "源心共鸣！"; 
+                document.getElementById('os-desc').innerText = "你成功抵御了虚无，源头之心为你开启了更深的门扉。"; nb.innerText = "进入下一阶段"; 
+            } else { 
+                document.getElementById('os-icon').innerText = "👑"; document.getElementById('os-title').innerText = "爱即永恒！"; 
+                document.getElementById('os-desc').innerText = "你的器皿已经升华为永恒。整个宇宙的爱都在此流动。"; nb.innerText = "轮回守望"; 
+            }
+        } else { 
+            failCount++;
+            failText.innerText = `翻桶记录: ${failCount}`;
+            document.getElementById('os-icon').innerText = "💔"; document.getElementById('os-title').innerText = "轮回破裂"; 
+            document.getElementById('os-desc').innerText = `源头之心停止了搏动。这是你第 ${failCount} 次迷失。\n宿命提示：回 Lvl.1 重新找回真爱。`; 
+            nb.innerText = "重新寻找真爱"; 
+        }
+    }
+
+    function handleMenu() {
+        const t = document.getElementById('os-title').innerText;
+        if(t === "轮回破裂" || t === "爱即永恒！") initLevel(0); else initLevel(curLvl + 1);
+    }
+
+    fireBtn.onclick = (e) => { e.stopPropagation(); beam = { x: vesselX, life: 25, hit: false }; energy = 0; updateManaUI(); };
+    window.addEventListener('mousemove', e => mouseX = e.clientX);
+    window.addEventListener('touchstart', e => mouseX = e.touches[0].clientX);
+    window.addEventListener('touchmove', e => { mouseX = e.touches[0].clientX; e.preventDefault(); }, {passive:false});
+
+    initLevel(0); update();
+</script>
+</body>
+</html>

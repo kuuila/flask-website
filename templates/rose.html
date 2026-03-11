@@ -1,0 +1,1826 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sacred Rosary | 神圣玫瑰经</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&family=Noto+Serif+SC:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #081020;
+            --bg-panel: rgba(13, 25, 45, 0.98);
+            --gold-primary: #D4AF37;
+            --gold-light: #F9E295;
+            --gold-dim: rgba(212, 175, 55, 0.3);
+            --rose-gold: #E0BFB8;
+            --rose-gold-dark: #B76E79;
+            --rose-gold-shine: #FFF0F5;
+            --text-main: #EAE6DA;
+            --text-sub: #8B9BB4;
+            --glass-modal: rgba(12, 24, 40, 0.98);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            background-color: var(--bg-dark);
+            background-image: 
+                radial-gradient(circle at 50% 0%, #1a3055 0%, var(--bg-dark) 60%),
+                repeating-linear-gradient(45deg, rgba(255,255,255,0.01) 0px, rgba(255,255,255,0.01) 1px, transparent 1px, transparent 20px);
+            font-family: 'Noto Serif SC', serif;
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* === 顶部 === */
+        .header {
+            flex-shrink: 0;
+            text-align: center;
+            position: relative;
+            z-index: 10;
+            padding-top: 20px; 
+            padding-bottom: 10px;
+        }
+        
+        .user-profile {
+            position: absolute;
+            top: 100px; left: 10px;
+            font-size: 0.75rem;
+            color: var(--gold-primary);
+            border: 1px solid rgba(212, 175, 55, 0.5);
+            padding: 4px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-family: 'Cinzel', serif;
+            background: rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(4px);
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            z-index: 20;
+            max-width: 45%;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .user-profile:active {
+            background: var(--gold-dim);
+            transform: scale(0.95);
+        }
+
+        .app-title {
+            font-family: 'Cinzel', serif;
+            font-size: 1.2rem;
+            color: var(--gold-primary);
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px rgba(212, 175, 55, 0.4);
+            margin-top: 0;
+            line-height: 1.2;
+        }
+
+        .stats-bar {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 8px;
+            font-size: 0.8rem;
+            color: var(--text-sub);
+        }
+        .stat-item {
+            display: flex; align-items: center; gap: 5px;
+        }
+        .stat-icon { font-size: 1rem; }
+        .stat-val { color: var(--gold-light); font-weight: bold; font-family: 'Cinzel', serif; }
+
+        .date-info { font-size: 0.7rem; color: #666; margin-top: 5px; padding-bottom: 5px; }
+
+        /* === 计时器区域 === */
+        .timer-section {
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px 0 20px 0;
+            position: relative;
+            cursor: pointer;
+        }
+        
+        /* === 念珠容器 (关键调整：尺寸缩小) === */
+        .rosary-ring-container {
+            position: absolute;
+            top: 50%; left: 50%;
+            /* 直径220px，比计时器(160px)大一圈 */
+            width: 220px; height: 220px; 
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 1s;
+            z-index: 5;
+        }
+        .rosary-ring-container.visible { opacity: 1; pointer-events: auto; }
+
+        /* === 念珠样式 === */
+        .bead {
+            position: absolute;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, var(--rose-gold-shine), var(--rose-gold), var(--rose-gold-dark));
+            box-shadow: 0 1px 3px rgba(0,0,0,0.8);
+            transition: all 0.3s ease;
+        }
+        .bead.small { width: 8px; height: 8px; margin-left: -4px; margin-top: -4px; }
+        .bead.large { 
+            width: 14px; height: 14px; margin-left: -7px; margin-top: -7px; 
+            background: radial-gradient(circle at 30% 30%, #fff, var(--gold-primary));
+            box-shadow: 0 0 5px var(--gold-primary);
+            z-index: 2;
+        }
+        
+        /* 圣母牌/连接处 */
+        .bead.center-piece {
+            width: 18px; height: 18px; margin-left: -9px; margin-top: -9px;
+            background: radial-gradient(circle at 30% 30%, #fff, #b76e79);
+            clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%);
+            z-index: 3;
+        }
+
+        /* 十字架样式 */
+        .bead.cross {
+            width: 22px; height: 30px; border-radius: 2px;
+            background: none; box-shadow: none;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 1.8rem; color: var(--rose-gold-dark);
+            text-shadow: 0 2px 5px rgba(0,0,0,0.8);
+            margin-left: -11px; margin-top: -15px;
+            transition: all 0.5s;
+        }
+        
+        /* 激活高亮状态 */
+        .bead.active {
+            box-shadow: 0 0 10px #fff, 0 0 20px var(--gold-primary);
+            transform: scale(1.6);
+            z-index: 10;
+            background: #fff;
+        }
+        .bead.cross.active {
+            color: #fff; text-shadow: 0 0 20px var(--gold-primary); transform: scale(1.2);
+        }
+
+        /* 提示文字 */
+        .bead-prompt {
+            position: absolute;
+            top: 0px; /* 在圆环下方 */
+            text-align: center;
+            width: 160%; left: -30%;
+            color: var(--gold-light);
+            font-size: 0.75rem;
+            font-family: 'Noto Serif SC', serif;
+            text-shadow: 0 0 8px rgba(0,0,0,0.9);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.5s;
+            line-height: 1.4;
+        }
+        .rosary-ring-container.visible .bead-prompt { opacity: 1; }
+
+        .monstrance-rays {
+            position: absolute; top: 50%; left: 50%;
+            width: 220px; height: 220px;
+            transform: translate(-50%, -50%);
+            background: conic-gradient(from 0deg, transparent 0%, rgba(212,175,55,0.05) 10%, transparent 20%, rgba(212,175,55,0.05) 30%, transparent 40%, rgba(212,175,55,0.05) 50%, transparent 60%, rgba(212,175,55,0.05) 70%, transparent 80%, rgba(212,175,55,0.05) 90%, transparent 100%);
+            border-radius: 50%;
+            animation: rotateSlow 60s linear infinite;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .timer-circle {
+            position: relative;
+            width: 160px; height: 160px;
+            z-index: 1;
+        }
+        svg { transform: rotate(-90deg); width: 100%; height: 100%; }
+        .circle-bg { fill: none; stroke: rgba(255,255,255,0.05); stroke-width: 4; }
+        .circle-progress {
+            fill: none; stroke: var(--gold-primary); stroke-width: 5;
+            stroke-linecap: round; stroke-dasharray: 440; stroke-dashoffset: 0;
+            transition: stroke-dashoffset 1s linear;
+            filter: drop-shadow(0 0 8px var(--gold-primary));
+        }
+        .timer-content {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+        .timer-digits { font-family: 'Cinzel', serif; font-size: 2rem; color: #fff; font-weight: 700; }
+        .timer-label { font-size: 0.65rem; color: var(--gold-light); text-transform: uppercase; letter-spacing: 1px; }
+
+        .duration-selector {
+            display: flex;
+            gap: 10px;
+            z-index: 2;
+            transition: opacity 0.3s, transform 0.3s;
+            margin-top: 15px;
+        }
+        .duration-selector.fade-out {
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(-10px);
+            height: 0; margin: 0; overflow: hidden;
+        }
+        
+        .dur-btn {
+            background: transparent;
+            border: 1px solid var(--gold-dim);
+            color: var(--text-sub);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-family: 'Cinzel', serif;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .dur-btn.active {
+            background: var(--gold-primary);
+            color: #000;
+            border-color: var(--gold-primary);
+            font-weight: bold;
+        }
+
+        /* === 滚动内容区 === */
+        .scroll-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px 20px 20px 20px;
+            mask-image: linear-gradient(to bottom, transparent, black 10px, black 95%, transparent);
+            -webkit-mask-image: linear-gradient(to bottom, transparent, black 10px, black 95%, transparent);
+            scroll-behavior: smooth;
+        }
+
+        .prayer-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--gold-dim);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .section-header {
+            font-family: 'Cinzel', serif;
+            color: var(--gold-light);
+            font-size: 0.9rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 8px;
+            margin-bottom: 15px;
+            text-align: center;
+            letter-spacing: 1px;
+        }
+
+        .clickable-item {
+            cursor: pointer;
+            transition: background 0.2s;
+            padding: 10px;
+            border-radius: 4px;
+            border-bottom: 1px dashed rgba(255,255,255,0.05);
+        }
+        .clickable-item:last-child { border-bottom: none; }
+        .clickable-item:active { background: rgba(212, 175, 55, 0.1); }
+        .clickable-item:hover { background: rgba(255, 255, 255, 0.02); }
+
+        .p-title {
+            color: var(--gold-primary); font-size: 1rem; margin-bottom: 4px; font-weight: bold;
+            display: flex; justify-content: space-between; align-items: baseline;
+        }
+        .p-title .lat { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 0.9rem; color: var(--text-sub); font-weight: normal; }
+        .p-body { 
+            font-size: 0.9rem; line-height: 1.6; color: #ddd; text-align: justify; margin-bottom: 2px;
+            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+        }
+        .tap-hint { font-size: 0.6rem; color: #555; text-align: right; margin-top: 2px; font-style: italic; }
+
+        /* === 底部控制区 === */
+       .footer {
+            /* 1. 关键修改：固定定位，默认隐藏在底部 */
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            /* 默认完全隐藏在视口下方（伸缩核心） */
+            transform: translateY(100%);
+            /* 2. 关键修改：添加平滑过渡动画 */
+            transition: transform 0.3s ease-in-out;
+
+            /* 原有样式保留 */
+            flex-shrink: 0;
+            background: var(--bg-panel);
+            border-top: 1px solid var(--gold-dim);
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 20;
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.6);
+            /* 可选：限制宽度（移动端全屏，PC端可自定义） */
+            width: 100%;
+            max-width: 100%;
+        }
+
+        /* 新增：展开状态的 CSS 类 */
+        .footer.expanded {
+            transform: translateY(30px); /* 展开时回到视口底部（可见状态） */
+        }   
+
+        .mode-tabs { display: flex; background: rgba(0,0,0,0.4); border-radius: 6px; padding: 4px; }
+        .mode-tab {
+            flex: 1; text-align: center; padding: 8px; font-size: 0.8rem; color: #888;
+            cursor: pointer; border-radius: 4px; transition: all 0.3s;
+        }
+        .mode-tab.active { background: var(--gold-primary); color: #111; font-weight: bold; }
+
+        .view-panel { display: none; height: 240px; overflow-y: auto; margin-top: 5px; }
+        .view-panel.active { display: block; animation: fadeIn 0.4s; }
+
+        .cal-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding: 0 5px; }
+        .cal-nav-btn {
+            background: none; border: 1px solid var(--gold-dim); color: var(--gold-primary);
+            width: 24px; height: 24px; border-radius: 50%; cursor: pointer; display: flex; justify-content: center; align-items: center;
+        }
+       
+        .cal-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        /* 关键修改1：减小网格间距（原有4px，改为2px，表格更紧凑） */
+        gap: 2px;
+        text-align: center;
+        /* 可选：限制日历最大宽度，进一步缩小整体尺寸（按需调整，如280px） */
+        max-width: 280px;
+        /* 居中显示（避免缩小后左对齐，影响美观） */
+        margin: 0 auto;
+        }
+
+        .cal-head {
+        /* 关键修改2：减小表头字体大小（原有0.6rem，改为0.5rem） */
+        font-size: 0.5rem;
+        color: #555;
+        /* 可选：减小表头高度，让表格更紧凑 */
+        line-height: 1;
+        padding: 2px 0;
+        }
+
+        .cal-cell {
+        /* 方式1：用固定小尺寸替代原有aspect-ratio:1（更易控制缩小效果，推荐） */
+        width: 30px; /* 原有自适应，改为固定30px，数值越小单元格越小 */
+        height: 30px; /* 与宽度一致，保持正方形 */
+        /* 方式2：若想保留自适应，可减小aspect-ratio（不推荐，控制精度低） */
+        /* aspect-ratio: 0.8; */
+        
+        /* 关键修改3：减小单元格内边距和字体大小 */
+        font-size: 0.6rem; /* 原有0.7rem，改为0.6rem */
+        padding: 2px 0; /* 新增内边距，控制内容居中且紧凑 */
+        
+        /* 原有样式保留，仅调整尺寸相关属性 */
+        border: 1px solid rgba(255,255,255,0.05);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #666;
+        border-radius: 3px;
+        position: relative;
+        }
+
+        .cal-cell.done { background: var(--gold-primary); color: #000; font-weight: bold; }
+        .cal-cell.today { border-color: var(--gold-primary); color: var(--gold-primary); }
+        .cal-cell.empty { border: none; }
+
+        .strict-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; }
+        .strict-cell {
+            aspect-ratio: 1; background: rgba(255,255,255,0.05); display: flex; justify-content: center; align-items: center;
+            font-size: 0.6rem; color: #444; border-radius: 2px;
+        }
+        .strict-cell.filled { background: linear-gradient(135deg, var(--gold-primary), #b08d28); color: #fff; box-shadow: 0 0 5px var(--gold-primary); }
+
+        .btn {
+            width: 100%; border: none; padding: 12px; border-radius: 50px;
+            font-family: 'Cinzel', serif; font-size: 1rem; font-weight: bold; cursor: pointer; letter-spacing: 2px; transition: all 0.3s;
+        }
+        .btn-start { background: linear-gradient(to right, #b8860b, #eec95e, #b8860b); color: #1a0f00; background-size: 200%; animation: shine 4s infinite linear; }
+        .btn-stop { background: transparent; border: 1px solid #d67c7c; color: #d67c7c; padding: 10px; font-size: 0.9rem; }
+        .hidden { display: none !important; }
+
+        /* === 弹窗 (Modal) === */
+        .modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); backdrop-filter: blur(8px);
+            z-index: 1000; display: flex; justify-content: center; align-items: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s;
+        }
+        .modal.show { opacity: 1; pointer-events: auto; }
+        .modal-content {
+            width: 95%; max-width: 800px; max-height: 85vh; overflow-y: auto;
+            background: var(--glass-modal); border: 1px solid var(--gold-primary);
+            border-radius: 12px; padding: 25px;
+            box-shadow: 0 0 40px rgba(0,0,0,0.8);
+            position: relative; display: flex; flex-direction: column;
+        }
+        .modal-close {
+            position: absolute; top: 10px; right: 15px; font-size: 1.8rem; color: #888;
+            background: none; border: none; cursor: pointer; z-index: 10;
+        }
+        .modal-header { text-align: center; margin-bottom: 20px; border-bottom: 1px solid rgba(212,175,55,0.2); padding-bottom: 10px; }
+        .m-title-cn { color: var(--gold-primary); font-size: 1.4rem; font-weight: bold; margin-bottom: 2px; }
+        .m-title-lat { font-family: 'Cormorant Garamond', serif; font-style: italic; color: #888; font-size: 1rem; }
+
+        /* 双列布局 */
+        .modal-body-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            text-align: justify;
+        }
+        
+        .col-cn {
+            font-size: 1.05rem; line-height: 1.8; color: #eee;
+            border-right: 1px solid rgba(255,255,255,0.1); padding-right: 15px;
+            white-space: pre-wrap;
+        }
+        .col-lat {
+            font-family: 'Cormorant Garamond', serif; font-size: 1.1rem; line-height: 1.5; 
+            color: #aaa; font-style: italic; padding-left: 5px;
+            white-space: pre-wrap;
+        }
+
+        /* footer 伸缩触发按钮 */
+        .toggle-footer-btn {
+            position: fixed;
+            right: 10px;
+            bottom: 60px; /* 悬浮在视口右下角，不被隐藏的 footer 遮挡 */
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--gold-primary);
+            color: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.2rem;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(212, 175, 55, 0.5);
+            z-index: 30; /* 层级高于 footer，确保始终可见 */
+            transition: all 0.3s;
+        }
+
+        .toggle-footer-btn:active {
+            transform: scale(0.95);
+            background: var(--gold-light);
+        }
+
+        @media (max-width: 600px) {
+            .modal-body-row { gap: 10px; }
+            .col-cn { font-size: 0.95rem; padding-right: 8px; }
+            .col-lat { font-size: 0.95rem; padding-left: 2px; }
+        }
+
+        @keyframes rotateSlow { 100% { transform: translate(-50%, -50%) rotate(360deg); } }
+        @keyframes shine { 0% { background-position: 0% 50%; } 100% { background-position: 100% 50%; } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+    
+        /* === 灵修位阶徽章 === */
+        .rank-badge-container {
+            text-align: center;
+            margin-top: 15px;
+            margin-bottom: 5px;
+            animation: fadeIn 1s ease-in;
+            position: absolute;
+            top:120px;
+            left:10px;
+        }
+        
+        .rank-badge {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 8px 20px;
+            background: linear-gradient(180deg, rgba(30,40,60,0.8) 0%, rgba(10,15,25,0.9) 100%);
+            border: 1px solid var(--gold-dim);
+            border-radius: 4px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            position: relative;
+            cursor: help; /* 提示可点击/查看 */
+        }
+        
+        .rank-badge::before, .rank-badge::after {
+            content: '☩';
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--gold-dim);
+            font-size: 0.8rem;
+        }
+        .rank-badge::before { left: 8px; }
+        .rank-badge::after { right: 8px; }
+
+        .rank-title-lat {
+            font-family: 'Cinzel', serif;
+            font-size: 0.9rem;
+            color: var(--gold-primary);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-weight: bold;
+            text-shadow: 0 0 5px rgba(212,175,55,0.3);
+        }
+        
+        .rank-title-cn {
+            font-family: 'Noto Serif SC', serif;
+            font-size: 0.75rem;
+            color: #8B9BB4;
+            margin-top: 2px;
+        }
+
+        /* 进度条容器 */
+        .rank-progress-bg {
+            width: 100%;
+            height: 2px;
+            background: rgba(255,255,255,0.1);
+            margin-top: 6px;
+            border-radius: 1px;
+            position: relative;
+        }
+        .rank-progress-bar {
+            height: 100%;
+            background: var(--gold-primary);
+            width: 0%;
+            box-shadow: 0 0 5px var(--gold-primary);
+            transition: width 1s ease-out;
+        }
+    
+    
+        /* === 祈祷墙样式 === */
+        .prayer-list {
+            height: 200px;
+            overflow-y: auto;
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 4px;
+            background: rgba(0,0,0,0.2);
+            padding: 5px;
+        }
+        .prayer-row {
+            display: flex;
+            gap: 8px;
+            padding: 8px;
+            border-bottom: 1px dashed rgba(255,255,255,0.1);
+            font-size: 0.8rem;
+            align-items: baseline;
+        }
+        .p-time { color: #666; font-family: 'Consolas', monospace; font-size: 0.75rem; white-space: nowrap; }
+        .p-name { color: var(--gold-primary); font-weight: bold; white-space: nowrap; max-width: 80px; overflow: hidden; text-overflow: ellipsis; }
+        .p-content { color: #ccc; flex: 1; line-height: 1.4; }
+    
+    </style>
+
+    <!-- 标题 -->
+    <meta property="og:title" content="玫瑰经辅助小工具">
+    <!-- 描述 -->
+    <meta property="og:description" content="玫瑰经日诵经文和记录">
+    <!-- 图片(必须≥300×300px) -->
+    <meta property="og:image" content="http://www.mxle.net/static/rose.jpg">
+    <!-- 网页类型 -->
+    <meta property="og:type" content="website">
+    <!-- 链接 -->
+    <meta property="og:url" content="http://www.mxle.net/s/rose">
+    <script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@3/dist/fp.min.js"></script>
+</head>
+<body>
+
+    <div class="header">
+        <div class="user-profile" id="user-name-btn" onclick="App.editName()">
+            <span id="name-display">设置圣名</span> <span style="font-size:0.8em; opacity:0.7">✎</span>
+        </div>
+       <div class="rank-badge-container" onclick="App.showRankInfo()">
+            <div class="rank-badge">
+                <div class="rank-title-lat" id="rank-lat" style="display:none">VIATOR</div>
+                <div class="rank-title-cn" id="rank-cn">旅人</div>
+                <div class="rank-progress-bg">
+                    <div class="rank-progress-bar" id="rank-bar"></div>
+                </div>
+            </div>
+        </div>
+        <div class="app-title">Sanctum Rosarium</div>
+        <div class="stats-bar">
+            <div class="stat-item"><span class="stat-icon">📿</span><span>总灵修: <span class="stat-val" id="stat-total-days">0</span> 天</span></div>
+            <div class="stat-item"><span class="stat-icon">👑</span><span>40天圆满: <span class="stat-val" id="stat-rounds">0</span> 轮</span>
+            <span class="stat-val" id="stat-rounds-cnt">(0/40)</span> 
+            </div>
+        </div>
+        <div class="date-info" id="date-display">loading...</div>
+    </div>
+
+    <!-- 计时器与念珠区域 -->
+    <div class="timer-section" id="timer-area" onclick="App.advanceBead()">
+        <div class="monstrance-rays"></div>
+        
+        <!-- 念珠环 -->
+        <div class="rosary-ring-container" id="rosary-ring">
+            <div class="bead-prompt" id="rosary-prompt">准备开始</div>
+            <!-- JS 生成念珠 -->
+        </div>
+
+        <div class="timer-circle">
+            <svg viewBox="0 0 160 160">
+                <circle class="circle-bg" cx="80" cy="80" r="70"></circle>
+                <circle class="circle-progress" id="ring" cx="80" cy="80" r="70"></circle>
+            </svg>
+            <div class="timer-content">
+                <div class="timer-digits" id="time-text">30:00</div>
+                <div class="timer-label" id="time-status">Preparation</div>
+            </div>
+        </div>
+        
+        <div class="duration-selector" id="duration-selector">
+            <button class="dur-btn"  id="dur-btn-1-min" onclick="event.stopPropagation(); App.setDuration(1, this)">1 Min</button>
+            <button class="dur-btn" onclick="event.stopPropagation(); App.setDuration(20, this)">20 Min</button>
+            <button class="dur-btn active" onclick="event.stopPropagation(); App.setDuration(30, this)">30 Min</button>
+        </div>
+        
+        <div id="tap-hint-text" style="position:absolute; bottom:0; width:90%; text-align:right; color:#666; font-size:0.7rem; opacity:0; transition:opacity 0.5s;">(点击圆环拨动念珠)</div>
+    </div>
+
+    <!-- 滚动内容区 -->
+    <div class="scroll-container">
+        <div class="prayer-card" id="intro-card"></div>
+        <div class="prayer-card" id="mystery-card"></div>
+        <div class="prayer-card">
+            <div class="section-header">ORATIONES · 常用经文</div>
+            <div id="prayers-list"></div>
+        </div>
+        <div style="height:20px"></div>
+    </div>
+
+    <div class="toggle-footer-btn" onclick="App.toggleFooter()">
+    📅 <!-- 可替换为图标/文字，如“展开/收起” -->
+    </div>
+
+    <!-- 底部 -->
+    <div class="footer">
+        <div class="mode-tabs">
+            <div class="mode-tab active" onclick="App.switchTab('calendar')">灵修日历 (Calendar)</div>
+            <div class="mode-tab" onclick="App.switchTab('strict')">40天严修 (Strict)</div>
+			<div class="mode-tab" onclick="App.switchTab('prayers')">今日祷告 (Today)</div>
+        </div>
+        <!-- 新增：云端同步按钮组 -->
+        
+        <!-- 云端同步开关 -->
+        <div style="text-align:center; margin-top:8px;">
+             <span onclick="App.toggleSync()" style="font-size:0.75rem; color:#666; cursor:pointer; border-bottom:1px dashed #555; transition:0.3s;" onmouseover="this.style.color='#aaa'" onmouseout="this.style.color='#666'">
+                [ ☁️ 管理云端存档 ]
+             </span>
+        </div> 
+
+        <!-- 云端同步按钮组 (默认隐藏) -->
+        <div id="sync-area" style="display:none; gap:10px; margin-top:10px;">
+            <button class="btn btn-stop" onclick="App.uploadData()" style="flex:1; border-color:var(--gold-primary); color:var(--gold-primary); font-size:0.8rem; padding:8px;">
+                ☁️ 上传存档 (Upload)
+            </button>
+            <button class="btn btn-stop" onclick="App.downloadData()" style="flex:1; border-color:#888; color:#ccc; font-size:0.8rem; padding:8px;">
+                📥 下载覆盖 (Download)
+            </button>
+        </div>
+    
+        <div class="view-panel active" id="view-calendar">
+            <div class="cal-nav">
+                <button class="cal-nav-btn" onclick="App.changeMonth(-1)">❮</button>
+                <span id="cal-title" style="font-family:'Cinzel',serif; font-size:0.9rem; color:#EAE6DA">Month Year</span>
+                <button class="cal-nav-btn" onclick="App.changeMonth(1)">❯</button>
+            </div>
+            <div class="cal-grid" id="cal-grid"></div>
+        </div>
+        <div class="view-panel" id="view-strict">
+             <div style="text-align:center; color:var(--gold-primary); margin-bottom:5px;">当前轮次进度: <span id="strict-count" style="font-weight:bold; font-size:1.1rem">0</span> / 40</div>
+            <div style="text-align:center; font-size:0.65rem; color:#666; margin-bottom:8px;">完成40天将获得一枚皇冠并开启新一轮</div>
+            <div class="strict-grid" id="strict-grid"></div>
+        </div>
+        <div class="view-panel" id="view-prayers">
+            <div style="text-align:center; font-size:0.7rem; color:#666; margin-bottom:10px;">
+                † 众弟兄姐妹的祈祷升到天主面前 †
+            </div>
+            <div class="prayer-list" id="prayer-list" onscroll="App.checkScroll()"></div>
+            <div id="prayer-loading" style="text-align:center; font-size:0.7rem; color:#555; display:none; padding:5px;">
+                Loading...
+            </div>
+        </div>
+        
+    </div>
+        <button class="btn btn-start" id="btn-start" onclick="App.start()">开始祈祷 · START</button>
+        <button class="btn btn-start hidden" id="btn-done" style="background:#4CAF50; color:white;" disabled>今日已完成 (AMEN)</button>
+        <button class="btn btn-stop hidden" id="btn-stop" onclick="App.stop()">停止 (Stop)</button>
+    <!-- 弹窗 -->
+    <div id="modal-overlay" class="modal" onclick="App.closeModal()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <button class="modal-close" onclick="App.closeModal()">×</button>
+            <div class="modal-header">
+                <div class="m-title-cn" id="m-cn-title">标题</div>
+                <div class="m-title-lat" id="m-lat-title">Title</div>
+            </div>
+            <div class="modal-body-row">
+                <div class="col-cn" id="m-cn-body">中文内容</div>
+                <div class="col-lat" id="m-lat-body">Latin Content</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ================= 数据定义 =================
+        const INTRO_DATA = {
+            t: "玫瑰经念法与历史", l: "Modus Orandi Rosarium",
+            desc: "古代修士每日有诵念50首圣咏之习惯。中世纪圣母敬礼流行，修士用以献给圣母，犹如壹串玫瑰花，故称玫瑰经。\n\n一般教友不谙拉丁文圣咏，遂以50次圣母经代替，并以串珠计数，谓之念珠 (Beads)。\n\n念珠每串53小珠，6大珠及一苦像。教宗若望保禄二世增添了“光明五端”后，使得玫瑰经更加完整。\n\n【诵念顺序】\n1. 手执念珠，划十字圣号。\n2. 念《信经》一遍。\n3. 念《天主经》一遍。\n4. 念《圣母经》三遍 (为信、望、爱三德)。\n5. 念《圣三光荣颂》一遍。\n6. 默想奥迹第一端，念《天主经》一遍，然后念《圣母经》十遍，最后念《圣三光荣颂》和《法蒂玛圣母祷词》。\n7. 如此继续默想并诵念第二至第五端。\n8. 最后念《又圣母经》并划十字圣号结束。",
+            lat_desc: "Rosarium (corona rosarum) oratio est catholica...\n\nStructura:\n1. Signum Crucis\n2. Symbolum Apostolorum\n3. Pater Noster\n4. Tres Ave Mariae\n5. Gloria Patri\n6. Mysteria (Pater Noster, Decem Ave Mariae, Gloria Patri, Oratio Fatimae)\n7. Salve Regina"
+        };
+
+        const PRAYERS = [
+            { 
+                t: "信经", l: "Symbolum Apostolorum", 
+                c: "我信全能的天主父，天地万物的创造者；我信父的惟一子、我们的主耶稣基督；(我信)祂因圣神降孕，由童贞玛利亚诞生；(我信)祂在比拉多执政时蒙难，被钉在十字架上，死而安葬；(我信)祂下降阴府，第三日从死者中复活；(我信)祂升了天，坐在全能天主父的右边；(我信)祂要从天降来，审判生者死者。我信圣神。我信圣而公教会，诸圣的相通。(我信)罪过的赦免。(我信)肉身的复活。(我信)永恒的生命。 阿们。", 
+                lat: "Credo in Deum Patrem omnipotentem, Creatorem caeli et terrae. Et in Iesum Christum, Filium eius unicum, Dominum nostrum, qui conceptus est de Spiritu Sancto, natus ex Maria Virgine, passus sub Pontio Pilato, crucifixus, mortuus, et sepultus, descendit ad inferos, tertia die resurrexit a mortuis, ascendit ad caelos, sedet ad dexteram Dei Patris omnipotentis, inde venturus est iudicare vivos et mortuos. Credo in Spiritum Sanctum, sanctam Ecclesiam catholicam, sanctorum communionem, remissionem peccatorum, carnis resurrectionem, vitam aeternam. Amen." 
+            },
+            { 
+                t: "天主经", l: "Pater Noster", 
+                c: "我们的天父，愿祢的名受显扬；愿祢的国来临；愿祢的旨意奉行在人间，如同在天上；求祢今天赏给我们日用的食粮；求祢宽恕我们的罪过，如同我们宽恕别人一样；不要让我们陷于诱惑，但救我们免于凶恶。阿们。", 
+                lat: "Pater noster, qui es in caelis, sanctificetur nomen tuum. Adveniat regnum tuum. Fiat voluntas tua, sicut in caelo et in terra. Panem nostrum quotidianum da nobis hodie, et dimitte nobis debita nostra sicut et nos dimittimus debitoribus nostris. Et ne nos inducas in tentationem, sed libera nos a malo. Amen." 
+            },
+            { 
+                t: "圣母经", l: "Ave Maria", 
+                c: "万福玛利亚，妳充满圣宠！主与妳同在。妳在妇女中受赞颂，妳的亲子耶稣同受赞颂。天主圣母玛利亚，求妳现在和我们临终时，为我们罪人祈求天主。阿们。", 
+                lat: "Ave Maria, gratia plena, Dominus tecum. Benedicta tu in mulieribus, et benedictus fructus ventris tui, Iesus. Sancta Maria, Mater Dei, ora pro nobis peccatoribus, nunc, et in hora mortis nostrae. Amen." 
+            },
+            { 
+                t: "圣三光荣颂", l: "Gloria Patri", 
+                c: "愿光荣归于父、及子、及圣神。起初如何，今日亦然，直到永远。阿们。", 
+                lat: "Gloria Patri, et Filio, et Spiritui Sancto. Sicut erat in principio, et nunc, et semper, et in saecula saeculorum. Amen." 
+            },
+            { 
+                t: "法蒂玛圣母祷词", l: "Oratio Fatimae", 
+                c: "吾主耶稣，请宽赦我们的罪过，救我们于永火之中。求祢把众人的灵魂，特别是那些需要祢怜悯的灵魂，领到天国里去。\n\n（圣母亲授玫瑰经附文，于每端玫瑰经结束后加念一次）", 
+                lat: "O mi Iesu, dimitte nobis debita nostra, libera nos ab igne inferni, conduc in caelum omnes animas, praesertim illas quae maxime indigent misericordia tua." 
+            },
+            { 
+                t: "又圣母经", l: "Salve Regina", 
+                c: "母后万福！仁慈的母亲，我们的生命，我们的甘饴，我们的希望。厄娃子孙，在此尘世，向您哀呼。在这涕泣之谷，向您叹息哭求。我们的主保，求您回顾，怜视我们。一旦流亡期满，使我们得见您的圣子、万民称颂的耶稣。童贞玛利亚，您是宽仁的、慈悲的、甘饴的。天主圣母，请为我们祈求，使我们堪受基督的恩许。阿们。", 
+                lat: "Salve, Regina, mater misericordiae: vita, dulcedo, et spes nostra, salve. Ad te clamamus, exsules filii Hevae. Ad te suspiramus, gementes et flentes in hac lacrimarum valle. Eia ergo, advocata nostra, illos tuos misericordes oculos ad nos converte. Et Iesum, benedictum fructum ventris tui, nobis post hoc exsilium ostende. O clemens, O pia, O dulcis Virgo Maria. V. Ora pro nobis sancta Dei Genitrix. R. Ut digni efficiamur promissionibus Christi. Amen." 
+            }
+        ];
+
+        // 奥迹详细数据 (已补全拉丁文对照)
+        const MYSTERY_DETAILS = {
+            joyful: {
+                n: "欢喜五端", l: "Mysteria Gaudiosa",
+                d: [
+                    { 
+                        t: "欢喜一端：天使报喜", l: "Annuntiatio", 
+                        c: "天使进去向她说：“万福！充满恩宠者，上主与你同在！”...看，你将怀孕生子，并要给他起名叫耶稣。\n玛利亚说：“看！上主的婢女，愿照你的话成就于我罢！”（路加 1：28，31，38）\n\n默想：在寂静的花园里，天主通过天使提出了一计划，一个女人接受了，玛利亚是在答应走入一个奥迹。她不知道在这新的旅程里会发生什么，但是她知道是谁在邀请她，而且玛利亚相信祂。在默想这个奥迹时，请求玛利亚使你对邀请你的天主有一份深深的信赖。请求她帮助你相信，即便前方的道路充满十字架的苦难，天主都会与你同行。",
+                        lat: "Et ingressus angelus ad eam dixit: “Ave, gratia plena, Dominus tecum”...“Ecce concipies in utero et paries filium et vocabis nomen eius Iesum”... \nDixit autem Maria: “Ecce ancilla Domini; fiat mihi secundum verbum tuum” (Lc 1:28,31,38)\n\nMeditatio: In horto silentii, Deus per angelum consilium proposuit, et mulier acceptavit. Maria mysterium ingressa est. Quamvis nesciret quid in novo itinere eventurum esset, tamen sciebat quis eam vocaret, et Deo credebat. Rogamus Mariam ut adiuvet nos credere, etiam si via crucis plena sit, Deum nobiscum ambulare."
+                    },
+                    { 
+                        t: "欢喜二端：玛利亚访亲", l: "Visitatio", 
+                        c: "（依撒伯尔）大声呼喊说：“在女人中你是蒙祝福的，你的胎儿也是蒙祝福的。吾主的母亲驾临我这里，这是我哪里得来的呢？看，你请安的声音一入我耳，胎儿就在我腹中欢喜踊跃。（路 1：42-44）\n\n默想：天主奇妙的计划之一就是选择不同的灵魂，使他们彼此联合，以便在旅途上相互帮助...在默想这个奥迹时，请求玛利亚帮助你和你的属灵朋友小心地聆听上主在你们生命里的声音。",
+                        lat: "Et exclamavit voce magna et dixit: “Benedicta tu inter mulieres, et benedictus fructus ventris tui... Ecce enim ut facta est vox salutationis tuae in auribus meis, exsultavit in gaudio infans in utero meo” (Lc 1:42-44)\n\nMeditatio: Mirabile Dei consilium est animas diversas eligere et eas inter se coniungere, ut in itinere se invicem adiuvent. Rogamus Mariam ut adiuvet te et amicos tuos spirituales ad vocem Domini in vita vestra attente auscultandam."
+                    },
+                    { 
+                        t: "欢喜三端：耶稣诞生", l: "Nativitas", 
+                        c: "他们在白冷城的时候，她分娩的日期满了，便生了她的头胎男儿，用襁褓裹起，放在马槽里，因为在客栈中为他们没有地方。（路 2：6-7）\n\n默想：当救世主进入这世界时，整个白冷城又暗又静。他的第一个家是在玛利亚温柔的怀抱里...在这个奥迹里，请玛利亚代求恩宠，使我们相信主所应许我们生命中的祝福一定会来临，即便这些祝福看似姗姗来迟。",
+                        lat: "Factum est autem, cum essent ibi, impleti sunt dies, ut pareret, et peperit filium suum primogenitum et pannis eum involvit et reclinavit eum in praesepio, quia non erat eis locus in deversorio. (Lc 2:6-7)\n\nMeditatio: Cum Salvator in hunc mundum intravit, Bethlehem obscura et silens erat. Prima eius domus in ulnis Mariae teneris fuit. In hoc mysterio, rogamus Mariam ut intercedat pro nobis, ut credamus benedictiones a Deo promissas certe venturas esse, etiam si tardare videantur."
+                    },
+                    { 
+                        t: "欢喜四端：献耶稣于圣殿", l: "Praesentatio", 
+                        c: "按梅瑟的法律，一满了他们取洁的日期，他们便带着孩子上耶路撒冷去献给上主...西默盎祝福了他们，又向他的母亲玛利亚说：“看，这孩子已被立定，为使以色列中许多人跌倒和复起，并成为反对的记号──至于你，要有一把利剑刺透你的心灵──为叫许多人心中的思念显露出来。”（路 2：22，34-35）\n\n默想：从来没有一个祝圣像那天耶稣的祝圣一样...在冥想这个奥迹时，请求玛利亚帮助我们以开放的心接受那些我们理智上不能明白的事。",
+                        lat: "Et postquam impleti sunt dies purgationis eorum secundum legem Moysis, tulerunt illum in Ierosolymam... et dixit ad Mariam matrem eius: “Ecce positus est hic in ruinam et resurrectionem multorum... et tuam ipsius animam pertransiet gladius”. (Lc 2:22,34-35)\n\nMeditatio: Nunquam consecratio talis fuit sicut illa Iesu. Maria et Ioseph Filium Unigenitum Patri consecraverunt. Rogamus Mariam ut adiuvet nos corde aperto accipere quae ratione nostra comprehendere non possumus."
+                    },
+                    { 
+                        t: "欢喜五端：耶稣在圣殿讲道", l: "Inventio in Templo", 
+                        c: "过了三天，（玛利亚和若瑟）才在圣殿里找到了他。他正坐在经师中，聆听他们，也询问他们。 他就同他们下去，来到纳匝肋，属他们管辖。他的母亲把这一切默存在心中。 （路 2：46，51）\n\n默想：欢喜五端的每一端好像都带着悲伤，但又都有天主的光和荣耀...在这个奥迹里，请求玛利亚帮你在你的生命里看见、触摸到耶稣的慈悲。",
+                        lat: "Et factum est, post triduum invenerunt illum in templo sedentem in medio magistrorum, audientem illos et interrogantem eos... Et descendit cum eis et venit Nazareth et erat subditus illis. Et mater eius conservabat omnia verba haec in corde suo. (Lc 2:46,51)\n\nMeditatio: Quodlibet mysterium gaudiosum videtur tristitiam ferre, sed etiam lucem et gloriam Dei habet. In hoc mysterio, rogamus Mariam ut adiuvet te videre et tangere misericordiam Iesu in vita tua."
+                    }
+                ]
+            },
+            sorrowful: {
+                n: "痛苦五端", l: "Mysteria Dolorosa",
+                d: [
+                    { 
+                        t: "痛苦一端：耶稣山园祈祷", l: "Agonia in Horto", 
+                        c: "耶稣同他们来到一个名叫革责玛尼的庄园里...「我父，若是可能，就让这杯离开我吧！但不要照我，而要照你所愿意的。」（玛 26:36-39）\n\n这样的战斗和胜利，只有在祈祷中才能达到。耶稣在传教之初，以及在山园祈祷的最后战斗，都是以祈祷战胜诱惑。〔《天主教教理》(1992)，2849条〕",
+                        lat: "Tunc venit Iesus cum illis in praedium, quod dicitur Gethsemani... “Pater mi, si possibile est, transeat a me calix iste; verumtamen non sicut ego volo, sed sicut tu”. (Mt 26:36-39)\n\nTalis pugna et victoria nonnisi in oratione sunt possibiles. Per orationem Iesus victoriam de Tentatore, inde ab initio suae vitae publicae atque in ultimo agone, reportat. (CCC 2849)"
+                    },
+                    { 
+                        t: "痛苦二端：耶稣受鞭打", l: "Flagellatio", 
+                        c: "比拉多命人把耶稣带去鞭打了。然后兵士们用荆棘编了个茨冠，放在他头上，给他披上一件紫红袍，来到他跟前说：「犹太人的君王，万岁！」并给他耳光。（若 19:1-3）\n\n耶稣的苦难是具体的历史事实：他曾被「长老、司祭长和经师弃绝」，他们并把他「交给外邦人戏弄、鞭打及钉死」。〔《天主教教理》(1992)，572条〕",
+                        lat: "Tunc ergo apprehendit Pilatus Iesum et flagellavit. (Io 19:1)\n\nPassio Iesu formam accepit historicam concretam ex eo quod ille reiectus est a senioribus et principibus sacerdotum et scribis, qui eum tradiderunt gentibus ad illudendum et flagellandum et crucifigendum. (CCC 572)"
+                    },
+                    { 
+                        t: "痛苦三端：耶稣受茨冠之苦", l: "Coronatio Spinis", 
+                        c: "总督的兵士把耶稣带到总督府内...脱去了他的衣服，给他披上一件紫红色的外氅；又用荆棘编了一个茨冠，戴在他头上，拿一根芦苇放在他右手里；然后跪在他前，戏弄他说：「犹太人的君王，万岁！」（玛 27:27-29）\n\n耶稣服从至死，藉此完成了受苦仆人对他人罪过的承担，他「牺牲了自己的性命，作了赎罪祭」并「承担大众的罪过」。耶稣赔补了我们的过错并为我们的罪向父作了赔偿。 〔《天主教教理》(1992)，616条〕",
+                        lat: "Tunc milites praesidis suscipientes Iesum in praetorio... plectentes coronam de spinis posuerunt super caput eius et harundinem in dextera eius. (Mt 27:27-29)\n\nIesus satisfactionem fecit pro culpis nostris et Patri pro peccatis nostris reparationem obtulit. (CCC 616)"
+                    },
+                    { 
+                        t: "痛苦四端：耶稣背十字架", l: "Bajulatio Crucis", 
+                        c: "他们就强迫他背耶稣的十字架。他们将耶稣带到哥耳哥达，解说「髑髅」的地方。（谷 15:21-22）\n\n耶稣接受死亡，为赎人罪；「他在自己身上，亲自承担我们的罪过，而上了木架」（伯前2:24）。〔《天主教教理》(1992)，612条〕",
+                        lat: "Et angariaverunt praetereuntem quempiam Simonem Cyrenaeum... ut tolleret crucem eius. (Mc 15:21)\n\nCalicem Novae Conventionis, quem Pater ei porrigebat, Iesus libere accipit... « Peccata nostra ipse pertulit in corpore suo super lignum » (1 Pe 2,24). (CCC 612)"
+                    },
+                    { 
+                        t: "痛苦五端：耶稣十字架上死", l: "Crucifixio", 
+                        c: "就在那里把耶稣钉在十字架上...耶稣说：「父啊，宽赦他们吧！因为他们不知道他们做的是什么。」...耶稣大声呼喊说：「父啊！我把我的灵魂交托在你手中。」说完这话，便断了气。（路 23:33-46）\n\n「基督照经上记载的，为我们的罪死了」（格前15:3）。〔《天主教教理》(1992)，619条〕",
+                        lat: "Et postquam venerunt in locum, qui vocatur Calvariae, ibi crucifixerunt eum... Iesus autem dicebat: “Pater, dimitte illis, non enim sciunt quid faciunt”... Et clamans voce magna Iesus ait: “Pater, in manus tuas commendo spiritum meum”; et haec dicens exspiravit. (Lc 23:33-46)\n\n« Christus mortuus est pro peccatis nostris secundum Scripturas » (1 Cor 15,3). (CCC 619)"
+                    }
+                ]
+            },
+            glorious: {
+                n: "荣福五端", l: "Mysteria Gloriosa",
+                d: [
+                    { 
+                        t: "荣福一端：耶稣复活", l: "Resurrectio", 
+                        c: "她们进去，不见了主耶稣的遗体...那两个人对她们说：「你们为什么在死人中找活人呢？他不在这里了，他已复活了。」（路 24:1-6）\n\n「假如基督没有复活，那么，我们的宣讲便是空的，你们的信仰也是空的」。复活首先确认基督所行和所教的一切。〔《天主教教理》(1992)，651条〕",
+                        lat: "Non est hic, sed surrexit. Recordamini qualiter locutus est vobis, cum adhuc in Galilaea esset. (Lc 24:6)\n\n« Si autem Christus non resurrexit, inanis est ergo praedicatio nostra, inanis est et fides vestra » (1 Cor 15,14). Resurrectio imprimis confirmationem constituit omnium operum et doctrinae Christi. (CCC 651)"
+                    },
+                    { 
+                        t: "荣福二端：耶稣升天", l: "Ascensio", 
+                        c: "主耶稣给他们说了这些话以后，就被接升天，坐在天主的右边。（谷 16:19）\n\n这最后一个阶段，跟第一个阶段，即道成人身自天降下的阶段，有密切的联系。只有「出自父的」基督，才能「回到父」那里去。〔《天主教教理》(1992)，661条〕",
+                        lat: "Et Dominus quidem Iesus, postquam locutus est eis, assumptus est in caelum et sedit a dextris Dei. (Mc 16:19)\n\nHaec ultima statio arcte coniuncta manet cum prima, descensu scilicet de caelo in Incarnatione. Solus ille qui « exiit a Patre », potest « ad Patrem vadere ». (CCC 661)"
+                    },
+                    { 
+                        t: "荣福三端：圣神降临", l: "Descensus Spiritus", 
+                        c: "五旬节日一到，众人都聚集一处...有些散开好像火的舌头，停留在他们每人头上，众人都充满了圣神。（宗 2:1-4）\n\n「圣神」与「圣父」和「圣子」，同受钦崇，同享光荣。教会从主那里领受了圣神。〔《天主教教理》(1992)，691条〕",
+                        lat: "Et repleti sunt omnes Spiritu Sancto et coeperunt loqui aliis linguis, prout Spiritus dabat eloqui illis. (Act 2:4)\n\n« Spiritus Sanctus »... qui « cum Patre et Filio simul adoratur et conglorificatur ». Ecclesia Spiritum Sanctum a Domino accepit. (CCC 691)"
+                    },
+                    { 
+                        t: "荣福四端：圣母蒙召升天", l: "Assumptio", 
+                        c: "因全能者在我身上行了大事，祂的名字是圣的。（路 1:49）\n\n荣福童贞玛利亚在结束其尘世生命后，她的身体和灵魂一同被提升到天上的荣耀中，她在那里已分享她圣子复活的光荣。〔《天主教教理》(1992)，974条〕",
+                        lat: "Quia fecit mihi magna, qui potens est, et sanctum nomen eius. (Lc 1:49)\n\nImmaculata Virgo... expleto terrestris vitae cursu, corpore et anima ad caelestem gloriam assumpta est, et a Domino ut Regina universorum exaltata, ut Filio suo, Domino dominantium... conformius redderetur. (CCC 966)"
+                    },
+                    { 
+                        t: "荣福五端：天主光荣圣母", l: "Coronatio", 
+                        c: "天上出现了一个大异兆：有一个女人，身披太阳，脚踏月亮，头戴十二颗星的荣冠。（默 12:1）\n\n荣福童贞玛利亚的升天，是奇妙地分享圣子的复活，也是其它基督徒复活的先声。〔《天主教教理》(1992)，966条〕",
+                        lat: "Et signum magnum apparuit in caelo: mulier amicta sole, et luna sub pedibus eius, et super caput eius corona stellarum duodecim. (Apc 12:1)\n\nAssumptio Sanctae Virginis singularis est participatio Resurrectionis Filii sui et anticipatio resurrectionis aliorum christianorum. (CCC 966)"
+                    }
+                ]
+            },
+            luminous: {
+                n: "光明五端", l: "Mysteria Luminosa",
+                d: [
+                    { 
+                        t: "光明一端：耶稣受洗", l: "Baptisma", 
+                        c: "耶稣受洗后...忽然天为他开了。他看见天主圣神有如鸽子降下，来到他上面；又有声音由天上说：「这是我的爱子，我所喜悦的」（玛 3:16-17）\n\n耶稣的公开生活，是他在约但河接受若翰施洗时开始的。这显示出耶稣是以色列的默西亚和天主子。〔《天主教教理》(1992)，535条〕",
+                        lat: "Baptizatus autem Iesus confestim ascendit de aqua; et ecce aperti sunt ei caeli, et vidit Spiritum Dei descendentem sicut columbam et venientem super se. (Mt 3:16)\n\nVita publica Iesu ab eius baptismo a Ioanne in Iordane initium sumit... Manifestatio est Iesum esse Messiam Israel et Filium Dei. (CCC 535)"
+                    },
+                    { 
+                        t: "光明二端：加纳婚宴", l: "Autorevelatio apud Canam", 
+                        c: "在加纳有婚宴...酒缺了，耶稣的母亲向他说：「他们没有酒了。」...他的母亲给仆役说：「他无论吩咐你们什么，你们就作什么。」（若 2:1-5）\n\n耶稣在公开生活的开始，应他母亲的请求，在一个婚宴上行了他的第一个神迹。这里，教会看到耶稣肯定「婚姻」之美好。〔《天主教教理》(1992)，1613条〕",
+                        lat: "Dicit mater Iesu ad eum: “Vinum non habent”... Dicit mater eius ministris: “Quodcumque dixerit vobis, facite”. (Io 2:3,5)\n\nIn limine suae vitae publicae, Iesus primum operatur signum — rogante sua Matre — occasione festi nuptiarum. Ecclesia magnam attribuit momentum Iesu praesentiae in nuptiis Canae. (CCC 1613)"
+                    },
+                    { 
+                        t: "光明三端：宣讲天国", l: "Proclamatio Regni", 
+                        c: "「时期已满，天主的国临近了，你们悔改，信从福音罢！」（谷 1:15）\n\n所有人都被召进入天国。这默西亚的神国，首先宣告给以色列子民，并为接纳天下万民而建立的。〔《天主教教理》(1992)，543条〕",
+                        lat: "Et dicens: “Impletum est tempus, et appropinquavit regnum Dei; paenitemini et credite evangelio”. (Mc 1:15)\n\nOmnes homines ad Regnum vocantur. Hoc Regnum messianicum, primo filiis Israel nuntiatum, destinatum est ad omnes gentes omnium nationum accipiendas. (CCC 543)"
+                    },
+                    { 
+                        t: "光明四端：显圣容", l: "Transfiguratio", 
+                        c: "耶稣...在他们面前变了容貌：他的面貌发光有如太阳，他的衣服洁白如光。（玛 17:1-2）\n\n耶稣只短暂地显露了他的圣容，以确定伯多禄所宣认的信仰。但同时也宣示：「为进入他的光荣」，必须先经过耶路撒冷的十字架。〔《天主教教理》(1992)，555条〕",
+                        lat: "Et transfiguratus est ante eos; et resplenduit facies eius sicut sol, vestimenta autem eius facta sunt alba sicut lux. (Mt 17:2)\n\nAd momentum suam gloriam divinam Iesus monstrat, ita Petri confessionem confirmans... sed etiam revelat se oportere « per multas tribulationes intrare in regnum Dei ». (CCC 555)"
+                    },
+                    { 
+                        t: "光明五端：建立圣体", l: "Institutio Eucharistiae", 
+                        c: "耶稣拿起饼来，祝福了，擘开，递给门徒说：「你们拿去吃吧！这是我的身体。」（玛 26:26）\n\n耶稣命令我们要重复他的行动和话语，「直到他再来」。〔《天主教教理》(1992)，1341条〕",
+                        lat: "Cenantibus autem eis, accepit Iesus panem et benedixit ac fregit deditque discipulis et ait: “Accipite, comedite: hoc est corpus meum”. (Mt 26:26)\n\nMandatum Iesu iterandi suos gestus et sua verba, « donec veniat », non postulat tantum recordationem Iesu et eius eorum quae fecit. (CCC 1341)"
+                    }
+                ]
+            }
+        };
+         let GLOBAL_FINGERPRINT = null;
+
+     (async () => {
+        try {
+            // 1. 计算设备指纹
+            const fp = await FingerprintJS.load();
+            const result = await fp.get();
+            GLOBAL_FINGERPRINT = result.visitorId;
+            console.log("v5 指纹 ID:", GLOBAL_FINGERPRINT);
+
+            const currentUid = localStorage.getItem('rosary_uid');
+
+            // 场景 A: 新用户或清空了缓存 (本地无ID)
+            if (!currentUid) {
+                console.log("⚠️ 无本地ID，绑定指纹并尝试恢复...");
+                localStorage.setItem('rosary_uid', GLOBAL_FINGERPRINT);
+
+                // 尝试从云端拉取历史备份
+                try {
+                    const res = await fetch('/api/rose/sync/' + GLOBAL_FINGERPRINT);
+                    if (res.status === 200) {
+                        const json = await res.json();
+                        if (json.status === 'success') {
+                            localStorage.setItem('rosary_final_v5', json.data);
+                            console.log("✅ 自动恢复成功！刷新页面...");
+                            location.reload(); 
+                        }
+                    }
+                } catch (err) { console.log("云端无备份，视为新用户。"); }
+            } 
+            
+            // 场景 B: 老用户 (本地有旧随机ID，且与指纹不一致) -> 【静默迁移】
+            else if (currentUid !== GLOBAL_FINGERPRINT) {
+                console.log("🔄 检测到旧随机ID，正在进行静默迁移...");
+                
+                // 1. 悄悄替换为指纹ID
+                localStorage.setItem('rosary_uid', GLOBAL_FINGERPRINT);
+                
+                // 2. 获取当前本地数据
+                const localData = localStorage.getItem('rosary_final_v5');
+                
+                // 3. 立即以新ID同步到服务器 (确保云端也有新ID的记录)
+                if (localData) {
+                    fetch('/api/rose/sync', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ 
+                            uid: GLOBAL_FINGERPRINT, 
+                            data: localData 
+                        })
+                    }).then(() => console.log("✅ 静默迁移完成：旧ID已替换，数据已同步至新指纹。"));
+                }
+            }
+            
+            // 场景 C: ID 已经是由于指纹生成的 (无需操作)
+
+        } catch (e) {
+            console.error("指纹系统异常:", e);
+        }
+    })();
+        // ================= 核心逻辑 =================
+        const App = {
+            data: {
+                userName: "设置圣名",
+                calendar: [], 
+                strict: { streak: 0, lastDate: null, rounds: 0 } 
+            },
+            
+            targetDuration: 30 * 60, 
+            timeLeft: 30 * 60,
+            timerInterval: null,
+            isRunning: false,
+            wakeLock: null,
+            viewDate: new Date(),
+
+            // --- 新增：记录当前会话的开始日期 ---
+            currentSessionDate: null, 
+            // 念珠逻辑：0=Cross, 1-4=Intro, 5=Intro End, 6-60=Loop
+            currentStep: -1, 
+            // 新增：footer 展开状态标记（默认收起）
+            isFooterExpanded: false,
+
+            
+            // === 今日祷告模块 ===
+            prayerOffset: 0,
+            prayerHasMore: true,
+            isPrayerLoading: false,
+
+            switchTab(mode) {
+                document.querySelectorAll('.mode-tab').forEach(e => e.classList.remove('active'));
+                // 简单的通过 event.target 并不总是可靠，这里用遍历查找包含 text 的元素更稳，或者简化处理
+                // 为了兼容现有逻辑，我们假设点击的是对应的 div
+                const tabs = document.querySelectorAll('.mode-tab');
+                if(mode === 'calendar') tabs[0].classList.add('active');
+                if(mode === 'strict') tabs[1].classList.add('active');
+                if(mode === 'prayers') {
+                    tabs[2].classList.add('active');
+                    if (this.prayerOffset === 0) {
+                        this.loadPrayers(true);
+                    }
+                }
+
+                document.getElementById('view-calendar').classList.toggle('active', mode === 'calendar');
+                document.getElementById('view-strict').classList.toggle('active', mode === 'strict');
+                const pPanel = document.getElementById('view-prayers');
+                if(pPanel) pPanel.classList.toggle('active', mode === 'prayers');
+            },
+
+            async loadPrayers(reset = false) {
+                if (this.isPrayerLoading) return;
+                if (reset) {
+                    this.prayerOffset = 0;
+                    this.prayerHasMore = true;
+                    document.getElementById('prayer-list').innerHTML = "";
+                }
+                if (!this.prayerHasMore) return;
+
+                this.isPrayerLoading = true;
+                document.getElementById('prayer-loading').style.display = 'block';
+
+                try {
+                    const res = await fetch(`/api/rose/prayers?offset=${this.prayerOffset}`);
+                    const json = await res.json();
+                    
+                    if (json.status === 'success') {
+                        const list = document.getElementById('prayer-list');
+                        json.data.forEach(p => {
+                            const div = document.createElement('div');
+                            div.className = 'prayer-row';
+                            div.innerHTML = `
+                                <div class="p-time">${p.time}</div>
+                                <div class="p-name">${p.name}</div>
+                                <div class="p-content">${p.content}</div>
+                            `;
+                            list.appendChild(div);
+                        });
+                        
+                        this.prayerOffset += json.data.length;
+                        this.prayerHasMore = json.has_more;
+                    }
+                } catch(e) {
+                    console.error(e);
+                } finally {
+                    this.isPrayerLoading = false;
+                    document.getElementById('prayer-loading').style.display = 'none';
+                }
+            },
+            test(){
+                console.log('test');
+            },
+            checkScroll() {
+                const list = document.getElementById('prayer-list');
+                if (list.scrollTop + list.clientHeight >= list.scrollHeight - 20) {
+                    this.loadPrayers();
+                }
+            },
+
+            async submitPrayer() {
+                // 弹出输入框
+                let content = prompt("† 祈祷已完成 †\n\n请留下今日的祷告词 (2-20字):\n(与其他弟兄姐妹共勉)");
+                if (content === null) return; // 取消
+                if (!this.data.userName || this.data.userName === "设置圣名") {
+                    alert("⚠️ 无法提交：您尚未设置圣名。\\n\\n请先设置您的圣名 (Confirmation Name)，\\n以便在祷告墙上见证您的祈祷。");
+                    this.editName(); // 立即调用改名弹窗
+                    return; // 终止提交
+                }
+
+                content = content.trim();
+                if (content.length < 2) {
+                    alert("祷告词太短了，请多写几句。");
+                    return; // 允许重试逻辑太复杂，这里直接结束，用户可手动再次触发(如果加按钮的话)
+                }
+                
+                // 提交
+                try {
+                    const uid = this.getOrCreateUUID();
+                    const name = this.data.userName;
+                    
+                    await fetch('/api/rose/prayer', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ uid, name, content })
+                    });
+                    
+                    alert("祷告词已上传。");
+                    // 刷新列表（如果当前在列表页）
+                    this.loadPrayers(true);
+                } catch(e) {
+                    alert("上传失败: " + e);
+                }
+            },
+    
+            init() {
+                this.loadData();
+                  // --- 新增：Debug 修复逻辑入口 ---
+                const urlParams = new URLSearchParams(window.location.search);
+                //关闭修复
+                if (urlParams.get('debug') === '1') {
+                    this.runDebugFix();
+                }
+                this.checkIntegrity();
+                this.renderUI();
+                this.checkToday();
+                this.initRosaryRing();
+                document.addEventListener('visibilitychange', () => {
+                    if(document.visibilityState === 'visible') {
+                        this.checkIntegrity();
+                        this.checkToday();
+                        this.renderStats();
+                    }
+                });
+                document.addEventListener('click', (e) => {
+                    const footer = document.querySelector('.footer');
+                    const toggleBtn = document.querySelector('.toggle-footer-btn');
+                    // 若 footer 展开，且点击目标不是 footer 和触发按钮
+                    if (this.isFooterExpanded && !footer.contains(e.target) && !toggleBtn.contains(e.target)) {
+                        this.isFooterExpanded = false;
+                        footer.classList.remove('expanded');
+                        toggleBtn.style.display = 'flex';
+                    }
+                });
+                this.renderRank();
+            },
+            
+            runDebugFix() {
+                if (this.data.calendar.length === 0) {
+                    alert("未发现历史记录，无需修复。");
+                    return;
+                }
+
+                // 1. 获取排序后的第一天
+                const sortedDates = [...this.data.calendar].sort();
+                const startDate = new Date(sortedDates[0]);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+
+                // 辅助函数：格式化日期为 YYYY-MM-DD
+                const fmt = (d) => {
+                    const y = d.getFullYear();
+                    const m = (d.getMonth() + 1).toString().padStart(2, '0');
+                    const day = d.getDate().toString().padStart(2, '0');
+                    return `${y}-${m}-${day}`;
+                };
+
+                // 2. 遍历补全所有日期
+                let current = new Date(startDate);
+                let totalDaysCount = 0;
+                const newCalendar = [];
+
+                while (current <= today) {
+                    const dateStr = fmt(current);
+                    newCalendar.push(dateStr);
+                    totalDaysCount++;
+                    current.setDate(current.getDate() + 1);
+                }
+
+                // 3. 更新数据结构
+                this.data.calendar = newCalendar;
+                
+                // 严修逻辑修复：
+                // 每40天为一轮。总天数 / 40 = 轮次，余数 = 当前进度
+                this.data.strict.rounds = Math.floor(totalDaysCount / 40);
+                this.data.strict.streak = totalDaysCount % 40;
+                this.data.strict.lastDate = fmt(today);
+
+                // 如果刚好是40的倍数，设为40天满进度（或按APP逻辑重置为0但轮次加1，这里按APP逻辑处理）
+                // 在原APP逻辑中，达到40会提示并重置为0。
+                if (totalDaysCount > 0 && totalDaysCount % 40 === 0) {
+                    // 这种情况属于刚完成。
+                    this.data.strict.streak = 40; 
+                    this.data.strict.rounds -= 1; // 修正轮次，因为 renderStats 会显示进度
+                }
+
+                // 4. 保存并刷新
+                this.saveData();
+                alert(`🔧 调试模式：数据已修复！\n从 ${sortedDates[0]} 至今共补全 ${totalDaysCount} 天打卡。\n当前状态：${this.data.strict.rounds} 轮, 进度 ${this.data.strict.streak}/40。`);
+                
+                // 清除 URL 中的参数，防止刷新时反复运行
+                window.history.replaceState({}, document.title, window.location.pathname);
+            },
+
+            toggleFooter() {
+                const footer = document.querySelector('.footer');
+                const toggleBtn = document.querySelector('.toggle-footer-btn');
+                toggleBtn.style.display = 'none';
+                this.isFooterExpanded = !this.isFooterExpanded;
+                
+                // 通过添加/移除 expanded 类控制伸缩
+                if (this.isFooterExpanded) {
+                    footer.classList.add('expanded');
+                } else {
+                    footer.classList.remove('expanded');
+                }
+            },
+            loadData() {
+                const d = localStorage.getItem('rosary_final_v5'); // 升级版本号 v8
+                if(d) {
+                    const parsed = JSON.parse(d);
+                    this.data = { ...this.data, ...parsed };
+                }
+                this.updateNameDisplay();
+            },
+
+            saveData() {
+                localStorage.setItem('rosary_final_v5', JSON.stringify(this.data));
+            },
+
+            
+            // --- 云端同步功能 ---
+            getOrCreateUUID() {
+                 let uid = localStorage.getItem('rosary_uid');
+                
+                // 2. 如果本地没有 (被清除了)，但指纹算出来了，直接用指纹
+                if (!uid && GLOBAL_FINGERPRINT) {
+                    uid = GLOBAL_FINGERPRINT;
+                    localStorage.setItem('rosary_uid', uid);
+                }
+                
+                // 3. 兜底：如果指纹还没加载完 (极少见)，生成随机临时ID
+                // 注意：这种情况很少发生，因为我们在页面加载时就启动了指纹计算
+                if (!uid) {
+                    uid = 'temp-' + Math.random().toString(36).substring(2);
+                }
+                return uid;
+            },
+          
+          async autoSync() {
+                try {
+                    const uid = this.getOrCreateUUID();
+                    // 确保发送的是最新数据
+                    const payload = {
+                        uid: uid,
+                        data: JSON.stringify(this.data)
+                    };
+                    
+                    console.log("正在自动同步云端...");
+                    await fetch('/api/rose/sync', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(payload)
+                    });
+                    console.log("✅ 自动同步成功");
+                } catch(e) {
+                    console.error("❌ 自动同步失败:", e);
+                }
+            },
+
+            async uploadData() {
+                if(!confirm("确定要将本地记录上传到云端吗？\n这将覆盖云端旧数据。")) return;
+                
+                const uid = this.getOrCreateUUID();
+                // 确保数据是最新的
+                this.saveData(); 
+                const payload = {
+                    uid: uid,
+                    data: JSON.stringify(this.data)
+                };
+
+                try {
+                    const res = await fetch('/api/rose/sync', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(payload)
+                    });
+                    const json = await res.json();
+                    if(json.status === 'success') {
+                        alert("✅ 上传成功！\n您的唯一ID是: " + uid + "\n(换设备时需手动填入此ID才能找回数据)");
+                    } else {
+                        alert("❌ 上传失败: " + json.msg);
+                    }
+                } catch(e) {
+                    alert("❌ 网络错误: " + e);
+                }
+            },
+
+            async downloadData() {
+                let uid = this.getOrCreateUUID();
+                // 允许用户输入 ID 以恢复其他设备的数据
+                const inputUid = prompt("请输入您的设备ID进行恢复 (默认使用本机ID):", uid);
+                 // 如果点击取消 (null)，则退出
+                if (inputUid === null){
+                    //confirm("您输入为 null 123");
+                    return;
+                } 
+                
+                // 去除空格
+                //inputUid = inputUid.trim();
+
+                // 如果用户输入了内容，则更新 uid；如果为空，则保持原样（使用本机ID）
+                if (inputUid !== "") {
+                    uid = inputUid.trim();
+                }
+
+                if(!confirm("⚠️ 警告：下载将【覆盖】当前本地的所有记录！\n确定要继续吗？")) return;
+
+                try {
+                    const res = await fetch('/api/rose/sync/' + uid);
+                    if(res.status === 404) {
+                        alert("❌ 未找到该ID的云端存档。");
+                        return;
+                    }
+                    const json = await res.json();
+                    if(json.status === 'success') {
+                        // 覆盖本地数据
+                        this.data = JSON.parse(json.data);
+                        this.saveData();
+                        // 刷新界面
+                        this.updateNameDisplay();
+                        this.renderStats();
+                        this.renderUI(); // 刷新名字等
+                        // 如果 ID 变了，保存新 ID
+                        if(uid !== localStorage.getItem('rosary_uid')) {
+                            localStorage.setItem('rosary_uid', uid);
+                        }
+                        alert("✅ 同步成功！数据已更新。");
+                    } else {
+                        alert("❌ 下载失败: " + json.msg);
+                    }
+                } catch(e) {
+                    alert("❌ 网络错误: " + e);
+                }
+            },
+            toggleSync() {
+                const el = document.getElementById('sync-area');
+                if (el.style.display === 'none') {
+                    el.style.display = 'flex';
+                    // 自动滚动到底部
+                    setTimeout(() => {
+                         el.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                    }, 100);
+                } else {
+                    el.style.display = 'none';
+                }
+            },
+            updateNameDisplay() {
+                document.getElementById('name-display').innerText = this.data.userName || "设置圣名";
+            },
+
+            
+            editName() {
+                const uid = this.getOrCreateUUID();
+                const defaultValue = this.data.userName === "设置圣名" ? "" : this.data.userName;
+                //const newName = prompt("请输入您的圣名 (Confirmation Name):\n\n[本机ID]: " + uid, defaultValue);
+                 const newName = prompt("请输入您的圣名 (Confirmation Name):\n", defaultValue);
+                if(newName !== null && newName.trim() !== "") {
+                    this.data.userName = newName.trim();
+                    this.saveData();
+                    this.updateNameDisplay();
+                }
+            },
+    
+
+            checkIntegrity() {
+                if(this.data.strict.streak === 0 || !this.data.strict.lastDate) return;
+                const last = new Date(this.data.strict.lastDate).setHours(0,0,0,0);
+                const today = new Date().setHours(0,0,0,0);
+                const diff = (today - last) / 86400000;
+                if(diff > 1) {
+                    this.data.strict.streak = 0;
+                    this.saveData();
+                }
+            },
+
+            setDuration(mins, btnEl) {
+                if(this.isRunning) return;
+                this.targetDuration = mins * 60;
+                this.timeLeft = this.targetDuration;
+                document.querySelectorAll('.dur-btn').forEach(b => b.classList.remove('active'));
+                if(btnEl) btnEl.classList.add('active');
+                this.updateTimeDisplay();
+                document.getElementById('ring').style.strokeDashoffset = 0;
+            },
+
+            updateTimeDisplay() {
+                const m = Math.floor(this.timeLeft / 60);
+                const s = this.timeLeft % 60;
+                document.getElementById('time-text').innerText = `${m}:${s.toString().padStart(2,'0')}`;
+            },
+
+               // 辅助工具：获取格式化日期 YYYY-MM-DD
+            getFormattedDate(date) {
+                const d = date || new Date();
+                const year = d.getFullYear();
+                const month = (d.getMonth() + 1).toString().padStart(2, '0');
+                const day = d.getDate().toString().padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            },
+
+            start() {
+                if(this.isRunning) return;
+                this.currentSessionDate = this.getFormattedDate();
+                if('wakeLock' in navigator) navigator.wakeLock.request('screen').then(w => this.wakeLock = w).catch(()=>{});
+                this.isRunning = true;
+                document.getElementById('btn-start').classList.add('hidden');
+                document.getElementById('btn-stop').classList.remove('hidden');
+                document.getElementById('time-status').innerText = "Praying (Oratio)";
+                document.getElementById('duration-selector').classList.add('fade-out');
+                
+                document.getElementById('rosary-ring').classList.add('visible');
+                document.getElementById('tap-hint-text').style.opacity = 1;
+                
+                // 重置并激活第一颗
+                this.currentStep = -1;
+                this.advanceBead();
+
+                const ring = document.getElementById('ring');
+                const circumference = 440; 
+
+                this.timerInterval = setInterval(() => {
+                    this.timeLeft--;
+                    this.updateTimeDisplay();
+                    const offset = circumference - (this.timeLeft / this.targetDuration) * circumference;
+                    ring.style.strokeDashoffset = -offset;
+
+                    if(this.timeLeft <= 0) this.finish();
+                }, 1000);
+            },
+
+            // 手动拨动念珠
+            advanceBead() {
+                if (!this.isRunning) return;
+
+                // 移除旧高亮
+                this.highlightBead(this.currentStep, false);
+
+                this.currentStep++;
+                
+                // 步骤逻辑：
+                // 0: Cross (Creed)
+                // 1: Large (Our Father)
+                // 2,3,4: Small (Hail Mary 1,2,3)
+                // 5: Centerpiece (Gloria)
+                // 6-60: Loop (55 beads)
+                
+                if (this.currentStep > 60) {
+                    this.currentStep = 0; 
+                }
+
+                this.highlightBead(this.currentStep, true);
+                if (navigator.vibrate) navigator.vibrate(50);
+                this.updatePrompt();
+            },
+
+            highlightBead(step, isActive) {
+                let el = null;
+                if (step === 0) el = document.getElementById('intro-cross');
+                else if (step === 1) el = document.getElementById('intro-0');
+                else if (step >= 2 && step <= 4) el = document.getElementById(`intro-${step-1}`);
+                else if (step === 5) el = document.getElementById('intro-center');
+                else if (step >= 6) {
+                    const loopIdx = step - 6;
+                    el = document.getElementById(`loop-${loopIdx}`);
+                }
+
+                if (el) {
+                    if (isActive) el.classList.add('active');
+                    else el.classList.remove('active');
+                }
+            },
+
+            updatePrompt() {
+                const step = this.currentStep;
+                let txt = "";
+                
+                if (step === 0) txt = "开始：划圣号 & 信经 (十字架)";
+                else if (step === 1) txt = "为教宗意向：天主经";
+                else if (step >= 2 && step <= 4) {
+                    const virtues = ["信德", "望德", "爱德"];
+                    txt = `求增进${virtues[step-2]}：圣母经`;
+                }
+                else if (step === 5) txt = "圣三光荣颂 (准备开始第一端)";
+                else {
+                    const loopIdx = step - 6;
+                    const decade = Math.floor(loopIdx / 11) + 1;
+                    const pos = loopIdx % 11;
+                    
+                    if (pos === 0) txt = `奥迹默想:第 ${decade} 端 & 天主经`;
+                    else {
+                        txt = `第 ${decade} 端：圣母经 (${pos}/10)`;
+                        if (pos === 10) txt += " & 圣三 & 法蒂玛";
+                        if (decade === 5 && pos === 10) txt += " & 又圣母经";
+                    }
+                }
+                document.getElementById('rosary-prompt').innerText = txt;
+            },
+
+            resetRosary() {
+                document.getElementById('rosary-ring').classList.remove('visible');
+                document.getElementById('tap-hint-text').style.opacity = 0;
+                if (this.currentStep >= 0) {
+                    this.highlightBead(this.currentStep, false);
+                }
+                this.currentStep = -1;
+                document.getElementById('rosary-prompt').innerText = "准备开始";
+            },
+
+            // 念珠生成
+            initRosaryRing() {
+                const container = document.getElementById('rosary-ring');
+                container.innerHTML = '<div class="bead-prompt" id="rosary-prompt">准备开始</div>'; 
+                
+                const radius = 82; // 紧贴计时器
+                const centerX = 110; // 容器宽度的一半 (220px / 2)
+                const centerY = 110; 
+                
+                // 1. 生成主循环 (55颗: 5 x (1大+10小))
+                const totalLoop = 55;
+                const startAngle = 90; // 6点钟方向
+                
+                for (let i = 0; i < totalLoop; i++) {
+                    const bead = document.createElement('div');
+                    const isLarge = (i % 11 === 0); 
+                    bead.className = `bead ${isLarge ? 'large' : 'small'}`;
+                    bead.id = `loop-${i}`;
+                    
+                    const angleDeg = startAngle + (i * (360 / totalLoop));
+                    const angleRad = angleDeg * (Math.PI / 180);
+                    
+                    const x = centerX + radius * Math.cos(angleRad);
+                    const y = centerY + radius * Math.sin(angleRad);
+                    
+                    bead.style.left = `${x}px`;
+                    bead.style.top = `${y}px`;
+                    container.appendChild(bead);
+                }
+
+                // 2. 生成尾部 (Intro)
+                const tailConfig = [
+                    { id: 'intro-cross', type: 'cross', yOffset: 120 },
+                    { id: 'intro-0', type: 'large', yOffset: 90 },
+                    { id: 'intro-1', type: 'small', yOffset: 70 },
+                    { id: 'intro-2', type: 'small', yOffset: 55 },
+                    { id: 'intro-3', type: 'small', yOffset: 40 },
+                    { id: 'intro-center', type: 'center-piece', yOffset: 20 }
+                ];
+                
+                tailConfig.forEach(item => {
+                    const bead = document.createElement('div');
+                    bead.className = `bead ${item.type}`;
+                    bead.id = item.id;
+                    if(item.type === 'cross') bead.innerText = '✝';
+                    
+                    bead.style.left = `${centerX}px`;
+                    bead.style.top = `${centerY + radius + item.yOffset}px`;
+                    container.appendChild(bead);
+                });
+            },
+
+            stop() {
+                if(!confirm("祈祷未完成，确定中断吗？")) return;
+                clearInterval(this.timerInterval);
+                if(this.wakeLock) this.wakeLock.release();
+                this.isRunning = false;
+                this.timeLeft = this.targetDuration;
+                this.updateTimeDisplay();
+                document.getElementById('ring').style.strokeDashoffset = 0;
+                document.getElementById('btn-start').classList.remove('hidden');
+                document.getElementById('btn-stop').classList.add('hidden');
+                document.getElementById('time-status').innerText = "Preparation";
+                document.getElementById('duration-selector').classList.remove('fade-out');
+                this.resetRosary();
+            },
+
+            finish() {
+                clearInterval(this.timerInterval);
+                this.isRunning = false;
+                
+                if(this.wakeLock) this.wakeLock.release();
+      //          const now = new Date();
+       //         const year = now.getFullYear();
+        //        const month = (now.getMonth() + 1).toString().padStart(2, '0');
+         //       const day = now.getDate().toString().padStart(2, '0');
+          //      const today = `${year}-${month}-${day}`;
+                //const today = new Date().toISOString().split('T')[0];
+                const today = this.currentSessionDate; 
+           
+                if(!this.data.calendar.includes(today)) {
+                    this.data.calendar.push(today);
+                }
+                
+                if(this.data.strict.lastDate !== today) {
+                    this.data.strict.lastDate = today;
+                    this.data.strict.streak++;
+                    
+                    if(this.data.strict.streak === 40) {
+                        this.data.strict.rounds = (this.data.strict.rounds || 0) + 1;
+                        this.data.strict.streak = 0; 
+                        alert("✝ DEO GRATIAS! ✝\n祝贺！你已圆满完成一轮40天严修！\n获得一枚皇冠 👑，新的一轮已经开始。");
+                    }
+                }
+                
+                this.saveData();
+                this.autoSync();
+                this.checkToday();
+                this.renderStats();
+                this.resetRosary();
+                 // 延迟一点弹出，体验更好
+                setTimeout(() => { this.submitPrayer(); }, 500);
+
+                if(navigator.vibrate) navigator.vibrate([500,200,500]);
+                else alert("祈祷完成。Amen.");
+            },
+
+            checkToday() {
+//            const now = new Date();
+//            const year = now.getFullYear();
+//            const month = (now.getMonth() + 1).toString().padStart(2, '0');
+//            const day = now.getDate().toString().padStart(2, '0');
+//            const today = `${year}-${month}-${day}`;
+            const today =  this.getFormattedDate();
+            if(this.data.calendar.includes(today)) {
+                    document.getElementById('btn-start').classList.add('hidden');
+                    document.getElementById('btn-stop').classList.add('hidden');
+                    document.getElementById('btn-done').classList.remove('hidden');
+                    document.getElementById('time-text').innerText = "Amen";
+                    document.getElementById('ring').style.strokeDashoffset = 440;
+                    document.getElementById('duration-selector').classList.add('fade-out');
+                }
+            },
+
+            showText(title, latTitle, body, latBody) {
+                document.getElementById('m-cn-title').innerText = title;
+                document.getElementById('m-lat-title').innerText = latTitle;
+                document.getElementById('m-cn-body').innerText = body;
+                document.getElementById('m-lat-body').innerText = latBody;
+                document.getElementById('modal-overlay').classList.add('show');
+            },
+            
+            closeModal() {
+                document.getElementById('modal-overlay').classList.remove('show');
+            },
+
+            renderUI() {
+                const date = new Date();
+                document.getElementById('date-display').innerText = date.toLocaleDateString('zh-CN', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+
+                // 渲染简介
+                document.getElementById('intro-card').innerHTML = `
+                    <div class="clickable-item" onclick="App.showText('${INTRO_DATA.t}', '${INTRO_DATA.l}', \`${INTRO_DATA.desc}\`, \`${INTRO_DATA.lat_desc}\`)">
+                        <div class="p-title">${INTRO_DATA.t}<span class="lat">${INTRO_DATA.l}</span></div>
+                        <div class="p-body" style="color:#aaa;">古代修士每日有诵念50首圣咏之习惯。中世纪圣母敬礼流行，修士用以献给圣母...</div>
+                        <div class="tap-hint">点击查看完整念法</div>
+                    </div>
+                `;
+
+                // 渲染奥迹
+                const dayIdx = date.getDay();
+                let mKey = 'glorious';
+                if(dayIdx === 1 || dayIdx === 6) mKey = 'joyful';
+                if(dayIdx === 2 || dayIdx === 5) mKey = 'sorrowful';
+                if(dayIdx === 4) mKey = 'luminous';
+                
+                const mData = MYSTERY_DETAILS[mKey];
+                let mHTML = `
+                    <div class="section-header clickable-item" onclick="App.showText('${mData.n}', '${mData.l}', '今日当诵念${mData.n}。请默想以下五端奥迹。', 'Meditate on these mysteries today.')">MYSTERIA HODIERNA · 今日奥迹</div>
+                    <div style="text-align:center; color:var(--gold-primary); font-size:1.1rem; font-weight:bold;">${mData.n}</div>
+                    <div style="text-align:center; color:#888; font-style:italic; font-family:'Cormorant Garamond'; margin-bottom:15px;">${mData.l}</div>
+                `;
+                
+                mData.d.forEach((d,i) => {
+                    const safeC = d.c.replace(/'/g, "&apos;").replace(/\n/g, "\\n");
+                    const safeLat = d.lat.replace(/'/g, "&apos;").replace(/\n/g, "\\n");
+                    mHTML += `
+                        <div class="clickable-item" onclick="App.showText('${d.t}', '${d.l}', '${safeC}', '${safeLat}')">
+                            <div class="p-title">
+                                <span><span style="color:var(--gold-light);margin-right:5px;">${i+1}.</span>${d.t}</span>
+                                <span class="lat">${d.l}</span>
+                            </div>
+                            <div class="p-body" style="color:#aaa;">${d.c}</div>
+                            <div class="tap-hint">点击查看详情</div>
+                        </div>
+                        <div style="height:1px; background:rgba(255,255,255,0.05); margin:5px 0 10px 0;"></div>
+                    `;
+                });
+                document.getElementById('mystery-card').innerHTML = mHTML;
+
+                // 渲染经文
+                let pHTML = '';
+                PRAYERS.forEach(p => {
+                    const safeC = p.c.replace(/'/g, "&apos;").replace(/\n/g, "\\n");
+                    const safeLat = p.lat.replace(/'/g, "&apos;").replace(/\n/g, "\\n");
+                    
+                    pHTML += `
+                        <div class="clickable-item prayer-item" onclick="App.showText('${p.t}', '${p.l}', '${safeC}', '${safeLat}')">
+                            <div class="p-title">${p.t}<span class="lat">${p.l}</span></div>
+                            <div class="p-body">${p.c}</div>
+                            <div class="tap-hint">点击全屏阅读</div>
+                        </div>`;
+                });
+                document.getElementById('prayers-list').innerHTML = pHTML;
+                
+                this.renderStats();
+            },
+
+    
+            changeMonth(offset) {
+                this.viewDate.setMonth(this.viewDate.getMonth() + offset);
+                this.renderStats();
+            },
+
+            
+            // ================= 灵修位阶系统 =================
+            // 逻辑：得分 = 总天数 + (完成轮次 * 50)
+            // 轮次权重高，鼓励完成40天严修
+            calculateRank() {
+                const days = this.data.calendar.length;
+                const rounds = this.data.strict.rounds || 0;
+                
+                // 计算灵修分数 (Score)
+                // 每一轮严修(40天)相当于额外的加成，体现"质"的飞跃
+                const score = days + (rounds * 50);
+
+                const ranks = [
+                    { s: 0,    l: "Viator",           c: "慕道者",       desc: "初踏灵修之旅，步履蹒跚但心向光明。" },
+                    { s: 7,   l: "Catechumenus",     c: "坚振者",     desc: "已聆听圣言，徘徊于门槛，预备心灵。" },
+                    { s: 100,  l: "Novitius",         c: "进阶修士",   desc: "穿上修道初衣，开始习练克己与日课。" },
+                    { s: 250,  l: "Fidelis",          c: "爱之门徒",   desc: "信德扎根，如树栽溪水旁，按时结果。" },
+                    { s: 500,  l: "Miles Christi",    c: "基督之星",   desc: "佩戴玫瑰念珠为剑，在属灵战场上得胜。" },
+                    { s: 1000, l: "Eques Rosarii",    c: "玫瑰骑士",   desc: "以玫瑰经为荣耀勋章，誓死守护圣教会。" },
+                    { s: 2000, l: "Custos Fidei",     c: "信仰守护者", desc: "成为信德的堡垒，为他人遮风挡雨。" },
+                    { s: 3500, l: "Contemplativus",   c: "默观者",     desc: "超越语言的祈祷，在静默中注视真理之光。" },
+                    { s: 6000, l: "Amicus Dei",       c: "天主之友",   desc: "如亚巴郎般，与主亲密同行，无话不谈。" },
+                    { s: 9999, l: "Sanctus Bellator", c: "成圣战士",   desc: "凡在世上打过美好的仗，必获正义的冠冕。" }
+                ];
+
+                let currentRank = ranks[0];
+                let nextRank = ranks[1];
+                let progress = 0;
+                let curLv = 0;
+                for (let i = 0; i < ranks.length; i++) {
+                    if (score >= ranks[i].s) {
+                        currentRank = ranks[i];
+                        nextRank = ranks[i + 1] || { s: score * 1.2 }; // 最高级后虚拟一个上限
+                        curLv = i;
+                    } else {
+                        break;
+                    }
+                }
+
+                if(curLv >= 2)
+                {
+                  //关闭1分钟计时
+                    const targetElement = document.getElementById('dur-btn-1-min');
+                    if (targetElement) {
+                        // 设置为隐藏（完全不占空间）
+                        targetElement.style.display = 'none';
+                    }
+                }
+                // 计算当前等级内的进度百分比
+                const range = nextRank.s - currentRank.s;
+                const currentVal = score - currentRank.s;
+                progress = Math.min(100, Math.max(0, (currentVal / range) * 100));
+
+                return { current: currentRank, next: nextRank, progress: progress, score: score };
+            },
+
+            renderRank() {
+                const rankData = this.calculateRank();
+                
+                document.getElementById('rank-lat').innerText = rankData.current.l;
+                document.getElementById('rank-cn').innerText = rankData.current.c;
+                document.getElementById('rank-bar').style.width = rankData.progress + "%";
+            },
+
+            showRankInfo() {
+                const r = this.calculateRank();
+                const days = this.data.calendar.length;
+                const rounds = this.data.strict.rounds || 0;
+                
+                let info = `⚜️ **灵修位阶：${r.current.c}** (${r.current.l})\n\n`;
+                info += `📜 **位阶描述**：\n${r.current.desc}\n\n`;
+                info += `📊 **灵修积分**：${r.score}\n`;
+                info += `   • 累积天数：${days} (x1)\n`;
+                info += `   • 圆满轮次：${rounds} (x50)\n\n`;
+                info += `⚔️ **下一位阶**：${r.next.c || '圆满'}\n`;
+                if(r.next.c) {
+                    info += `   • 距离升级还需：${r.next.s - r.score} 分\n`;
+                }
+                
+                alert(info);
+            },
+    
+            renderStats() {
+                document.getElementById('stat-total-days').innerText = this.data.calendar.length;
+                document.getElementById('stat-rounds').innerText = this.data.strict.rounds || 0 ;
+                document.getElementById('stat-rounds-cnt').innerText = "(" + this.data.strict.streak + "/40)";
+
+                const viewYear = this.viewDate.getFullYear();
+                const viewMonth = this.viewDate.getMonth(); 
+                const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+                document.getElementById('cal-title').innerText = `${monthNames[viewMonth]} ${viewYear}`;
+                
+                const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+                const firstDay = new Date(viewYear, viewMonth, 1).getDay(); 
+
+                let calHTML = '';
+                const daysShort = ['S','M','T','W','T','F','S'];
+                daysShort.forEach(d => calHTML += `<div class="cal-head">${d}</div>`);
+                
+                for(let i=0; i<firstDay; i++) calHTML += `<div class="cal-cell empty"></div>`;
+ //               const now = new Date();
+ //               const year = now.getFullYear();
+//                const month = (now.getMonth() + 1).toString().padStart(2, '0');
+//                const day = now.getDate().toString().padStart(2, '0');
+ //               const today = `${year}-${month}-${day}`;
+                const todayStr = this.getFormattedDate();
+                for(let i=1; i<=daysInMonth; i++) {
+                    const checkStr = `${viewYear}-${(viewMonth+1).toString().padStart(2,'0')}-${i.toString().padStart(2,'0')}`;
+                    const isDone = this.data.calendar.includes(checkStr);
+                    const isToday = (checkStr === todayStr);
+                    calHTML += `<div class="cal-cell ${isDone?'done':''} ${isToday?'today':''}"><span>${isDone?'✝':i}</span></div>`;
+                }
+                document.getElementById('cal-grid').innerHTML = calHTML;
+
+                document.getElementById('strict-count').innerText = this.data.strict.streak;
+                let sHTML = '';
+                for(let i=1; i<=40; i++) {
+                    const filled = i <= this.data.strict.streak;
+                    sHTML += `<div class="strict-cell ${filled?'filled':''}">${filled?'✝':i}</div>`;
+                }
+                document.getElementById('strict-grid').innerHTML = sHTML;
+            }
+        };
+        
+        App.init();
+    </script>
+</body>
+</html>

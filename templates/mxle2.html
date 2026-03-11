@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>弥小乐 | The Birth</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Noto+Serif+SC:wght@300;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-deep: #050505;
+            --glass-bg: rgba(20, 20, 20, 0.4);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --text-main: #e0e0e0;
+            --honey-glow: #ffb300;
+            --heart-pulse: #ff4757;
+            --code-green: #2ed573;
+        }
+
+        body {
+            background-color: var(--bg-deep);
+            color: var(--text-main);
+            font-family: 'Noto Serif SC', serif;
+            margin: 0;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            perspective: 1000px;
+        }
+
+        /* 1. 粒子背景 */
+        #particle-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* 2. 电影噪点 */
+        .cinematic-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 1;
+            pointer-events: none;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%);
+            background-size: 100% 3px;
+            box-shadow: inset 0 0 100px rgba(0,0,0,0.9);
+            opacity: 0.6;
+        }
+
+        /* 3. 玻璃终端 */
+        .glass-terminal {
+            position: relative;
+            z-index: 10;
+            width: 85vw;
+            max-width: 420px;
+            height: 80vh;
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 4px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            animation: float 8s ease-in-out infinite;
+        }
+
+        .terminal-header {
+            padding: 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .dots { display: flex; gap: 6px; }
+        .dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.2); }
+        .title { font-family: 'Press Start 2P', cursive; font-size: 9px; color: rgba(255,255,255,0.4); letter-spacing: 1px; }
+
+        .content-flow {
+            flex-grow: 1;
+            padding: 25px;
+            font-size: 16px;
+            line-height: 2;
+            overflow-y: auto;
+            scrollbar-width: none;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            mask-image: linear-gradient(to bottom, transparent, black 2%, black 98%, transparent);
+            -webkit-mask-image: linear-gradient(to bottom, transparent, black 2%, black 98%, transparent);
+        }
+        .content-flow::-webkit-scrollbar { display: none; }
+
+        /* 动态插入的 Logo 样式 */
+        .inserted-logo {
+            display: block;
+            width: 100px;
+            height: 100px;
+            margin: 20px auto 10px auto; /* 上下居中 */
+            border-radius: 50%; /* 圆形裁切 */
+            opacity: 0;
+            border: 2px solid rgba(255, 179, 0, 0.3);
+            box-shadow: 0 0 20px rgba(255, 179, 0, 0.1);
+            animation: logoPop 1.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            /* 如果图片是白底黑字，可以用这个滤镜反转一下适应暗色模式，如果原图OK则删掉下面这行 */
+            /* filter: invert(1); */ 
+        }
+
+        /* 动画类 */
+        .fade-in-block { display: inline; opacity: 0; animation: textFadeIn 1s forwards; }
+        .char { display: inline-block; opacity: 0; animation: textFadeIn 0.8s forwards; }
+        .highlight-gold { color: var(--honey-glow); font-weight: 600; text-shadow: 0 0 15px rgba(255, 179, 0, 0.4); font-style: italic; }
+        .pulse-heart { color: var(--heart-pulse); display: inline-block; font-weight: 600; animation: heartbeat 1.5s infinite ease-in-out; text-shadow: 0 0 10px rgba(255, 71, 87, 0.6); }
+        .cursor { display: inline-block; width: 2px; height: 18px; background: var(--code-green); box-shadow: 0 0 8px var(--code-green); vertical-align: text-bottom; animation: blink 1s step-end infinite; margin-left: 4px; }
+        .footer-cta { padding: 20px; text-align: center; opacity: 0; transition: opacity 2s ease; }
+        .enter-btn { background: rgba(255, 179, 0, 0.05); border: 1px solid rgba(255, 179, 0, 0.3); color: var(--honey-glow); padding: 12px 24px; font-family: 'Press Start 2P', cursive; font-size: 10px; letter-spacing: 1px; cursor: pointer; transition: all 0.3s; text-decoration: none; display: inline-block; position: relative; overflow: hidden; }
+        .enter-btn:hover { box-shadow: 0 0 20px rgba(255, 179, 0, 0.2); border-color: var(--honey-glow); }
+
+        @keyframes logoPop { from { opacity: 0; transform: scale(0.5) translateY(20px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+        @keyframes textFadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes blink { 50% { opacity: 0; } }
+        @keyframes heartbeat { 0%, 100% { transform: scale(1); opacity: 0.9; } 50% { transform: scale(1.05); opacity: 1; } }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+
+    </style>
+</head>
+<body>
+
+    <canvas id="particle-canvas"></canvas>
+    <div class="cinematic-overlay"></div>
+
+    <div class="glass-terminal">
+        <div class="terminal-header">
+            <div class="dots">
+                <div class="dot" style="background:#ff5f56"></div>
+                <div class="dot" style="background:#ffbd2e"></div>
+                <div class="dot" style="background:#27c93f"></div>
+            </div>
+            <div class="title">MI_XIAOLE.LOG</div>
+        </div>
+
+        <div class="content-flow" id="console">
+            <span id="output"></span><span class="cursor"></span>
+        </div>
+
+        <div class="footer-cta" id="footer">
+            <a href="#" class="enter-btn">>> ENTER THE MXLE STORE</a>
+        </div>
+    </div>
+
+    <script>
+        // --- Canvas 粒子背景 ---
+        const canvas = document.getElementById('particle-canvas');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+        let particles = [];
+        function resize() { width = canvas.width = window.innerWidth; height = canvas.height = window.innerHeight; }
+        window.addEventListener('resize', resize);
+        resize();
+        class Particle {
+            constructor() {
+                this.x = Math.random() * width; this.y = Math.random() * height;
+                this.vx = (Math.random() - 0.5) * 0.3; this.vy = (Math.random() - 0.5) * 0.3;
+                this.size = Math.random() * 2 + 0.5;
+                this.color = Math.random() > 0.8 ? 'rgba(255, 179, 0, ' : 'rgba(255, 255, 255, ';
+                this.alpha = Math.random() * 0.5;
+            }
+            update() {
+                this.x += this.vx; this.y += this.vy;
+                if(this.x < 0) this.x = width; if(this.x > width) this.x = 0;
+                if(this.y < 0) this.y = height; if(this.y > height) this.y = 0;
+            }
+            draw() {
+                ctx.fillStyle = this.color + this.alpha + ')';
+                ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2); ctx.fill();
+            }
+        }
+        for(let i=0; i<60; i++) particles.push(new Particle());
+        function animateBg() {
+            ctx.clearRect(0, 0, width, height);
+            particles.forEach(p => { p.update(); p.draw(); });
+            requestAnimationFrame(animateBg);
+        }
+        animateBg();
+
+        // --- 核心剧本 ---
+        // type: 'text' (默认) | 'image' (插入图片)
+        const script = [
+            { text: "凌晨三点，笔记本又烫手了。", delay: 800 },
+            { text: "<br>第3927行代码，逻辑完美。", delay: 500 },
+            { text: "可是...", delay: 800 },
+            { text: "指尖没有温度。", delay: 1500 },
+            { text: "<br><br>于是我开始在现实中寻找Bug。", delay: 1000 },
+            { text: "<br>直到我拾起这些小物件。", delay: 1000 },
+            { text: "<br>当我握住它们时，", delay: 800 },
+            { text: "听到某种<span class='pulse-heart'>心跳的频率</span>。", delay: 1500 },
+            
+            // --- 触发 Logo 显示 ---
+            { type: 'image', src: '/static/logo_bw2.jpg', delay: 1200 },
+            
+            { text: "<br>弥小乐杂货铺，", delay: 600 },
+            { text: "便诞生于此。", delay: 1500 },
+            
+            { text: "<br><br>我<span class='highlight-gold'>执意</span>地认为，", delay: 1000 },
+            { text: "那些是内心关于爱的感受的溢出。", delay: 1500 },
+            { text: "<br>既然是溢出，", delay: 500 },
+            { text: "那就应该随它，", delay: 600 },
+            { text: "继续自然的<span class='highlight-gold'>流淌</span>。", delay: 1500 },
+            { text: "<br><br>既然是溢出，", delay: 500 },
+            { text: "<br>那无论是馈赠、交换、", delay: 800 },
+            { text: "<br>交易还是收藏。", delay: 1000 },
+            { text: "<br>都不影响它，", delay: 600 },
+            { text: "<br>源于心爱之物的本来面貌。", delay: 2000 }
+        ];
+
+        const output = document.getElementById('output');
+        const container = document.getElementById('console');
+        const footer = document.getElementById('footer');
+        const cursor = document.querySelector('.cursor');
+
+        async function playScript() {
+            for (let i = 0; i < script.length; i++) {
+                const item = script[i];
+
+                // 1. 处理图片插入
+                if (item.type === 'image') {
+                    const img = document.createElement('img');
+                    img.src = item.src;
+                    img.className = 'inserted-logo'; // 应用 CSS 动画
+                    // 这里直接添加 img 到 output 中
+                    // 为了布局美观，我们在前面加个换行
+                    output.appendChild(document.createElement('br'));
+                    output.appendChild(img);
+                    scrollToBottom();
+                    await wait(item.delay);
+                    continue;
+                }
+
+                // 2. 处理文本
+                let content = item.text;
+                let delay = item.delay;
+
+                // 处理开头的换行
+                while (content.startsWith('<br>')) {
+                    output.innerHTML += '<br>';
+                    content = content.substring(4);
+                    scrollToBottom();
+                }
+
+                if (!content) { await wait(delay); continue; }
+
+                // HTML 块整块显示
+                if (content.includes('<')) {
+                    const span = document.createElement('span');
+                    span.className = 'fade-in-block';
+                    span.innerHTML = content;
+                    output.appendChild(span);
+                    await wait(800);
+                } 
+                else {
+                    // 普通文本逐字打印
+                    await typeChars(content);
+                }
+
+                scrollToBottom();
+                await wait(delay);
+            }
+
+            cursor.style.display = 'none';
+            footer.style.opacity = 1;
+        }
+
+        function typeChars(str) {
+            return new Promise(resolve => {
+                let index = 0;
+                function next() {
+                    if (index < str.length) {
+                        const char = str.charAt(index);
+                        const span = document.createElement('span');
+                        span.textContent = char;
+                        span.className = 'char';
+                        output.appendChild(span);
+                        scrollToBottom();
+                        index++;
+                        setTimeout(next, Math.random() * 60 + 40);
+                    } else {
+                        resolve();
+                    }
+                }
+                next();
+            });
+        }
+
+        function scrollToBottom() {
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function wait(ms) {
+            return new Promise(r => setTimeout(r, ms));
+        }
+
+        // 启动
+        setTimeout(playScript, 1000);
+
+    </script>
+</body>
+</html>

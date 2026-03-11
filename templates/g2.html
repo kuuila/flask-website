@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>天选之桶：1000%满溢挑战</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #fcfaf5; font-family: 'STHeiti', 'Microsoft YaHei', sans-serif; touch-action: none; }
+        #ui { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
+        .hud { text-align: center; margin-top: 20px; color: #333; }
+        #lvl-tag { font-size: 12px; background: #333; color: #fff; display: inline-block; padding: 2px 10px; border-radius: 4px; margin-bottom: 5px; }
+        #score-val { font-size: 32px; font-weight: bold; color: #d35400; text-shadow: 2px 2px #fff; }
+        #timer-val { font-size: 18px; color: #c0392b; font-weight: bold; }
+        
+        .mana-bar { display: flex; justify-content: center; gap: 5px; margin-top: 10px; }
+        .mana-slot { width: 14px; height: 14px; border: 2px solid #333; border-radius: 50%; background: #fff; transition: 0.3s; }
+        .mana-slot.active { background: #e74c3c; border-color: #e74c3c; transform: scale(1.3); }
+        
+        #fire-btn { 
+            position: absolute; bottom: 60px; left: 50%; transform: translateX(-50%);
+            padding: 12px 30px; background: #f39c12; color: #fff; border: 4px solid #333;
+            border-radius: 10px; font-size: 20px; font-weight: bold; pointer-events: auto;
+            display: none; animation: pulse 0.3s infinite; box-shadow: 6px 6px 0px #333;
+        }
+        @keyframes pulse { 0%{transform: translateX(-50%) scale(1);} 50%{transform: translateX(-50%) scale(1.1);} 100%{transform: translateX(-50%) scale(1);} }
+        
+        #overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.98); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 100; text-align: center; pointer-events: auto; }
+        .btn-action { padding: 15px 40px; border: 4px solid #333; background: #f1c40f; font-size: 20px; font-weight: bold; cursor: pointer; box-shadow: 6px 6px 0px #333; margin-top: 20px; }
+        
+        /* 旁白气泡样式 */
+        #narrator-bubble { position: absolute; bottom: 150px; width: 80%; left: 10%; text-align: center; font-weight: bold; font-size: 18px; color: #e67e22; opacity: 0; transition: opacity 0.5s, transform 0.5s; pointer-events: none; text-shadow: 1px 1px white; }
+        #status-bubble { position: absolute; top: 130px; width: 100%; text-align: center; font-weight: bold; font-size: 22px; pointer-events: none; }
+    </style>
+</head>
+<body>
+
+<div id="ui">
+    <div class="hud">
+        <div id="lvl-tag">载入中...</div>
+        <div id="score-val">0 / 0</div>
+        <div id="timer-val">残余理智: 0s</div>
+        <div class="mana-bar" id="mana-container"></div>
+    </div>
+    <div id="status-bubble"></div>
+    <div id="narrator-bubble"></div>
+    <button id="fire-btn">超次元圣光炮！！</button>
+</div>
+
+<div id="overlay">
+    <div id="os-icon" style="font-size: 80px;">🙄</div>
+    <h1 id="os-title"></h1>
+    <p id="os-desc" style="color: #666; font-size: 18px; max-width: 80%;"></p>
+    <button class="btn-action" onclick="handleMenu()">点击逆天改命</button>
+</div>
+
+<canvas id="gameCanvas"></canvas>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const scoreText = document.getElementById('score-val');
+    const timerText = document.getElementById('timer-val');
+    const lvlTag = document.getElementById('lvl-tag');
+    const manaContainer = document.getElementById('mana-container');
+    const fireBtn = document.getElementById('fire-btn');
+    const overlay = document.getElementById('overlay');
+    const statusBubble = document.getElementById('status-bubble');
+    const narratorBubble = document.getElementById('narrator-bubble');
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    // 爆笑旁白配置库
+    const INTERACTIVE_TEXTS = {
+        lvl0: {
+            p25: "不错嘛，理智尚未完全丧失！",
+            p33: "这种手速...难道是桶中霸主？",
+            p50: "进度过半！凡人之躯，神之器皿！",
+            p90: "稳住！差一步就能称霸新手村了！"
+        },
+        lvl1: {
+            p25: "这些干扰物居然没能迷惑你的双眼？",
+            p33: "本座看好你，你是万中无一的接球天才！",
+            p50: "一半了！宇宙的奥秘已经装进了一半！",
+            p90: "只差临门一脚！别手抖！抖了就变脑残粉！"
+        },
+        lvl2: {
+            p25: "天呐，他居然还在坚持！",
+            p33: "33%！整个银河系都在为你屏住呼吸！",
+            p50: "快跑啊！这桶要承载不住这溢出的爱意了！",
+            p90: "全神贯注！离封神只差最后几秒！"
+        }
+    };
+
+    const LEVELS = [
+        { name: "第一关：吾乃天选之桶，降临！", goal: 10, time: 60, req: 3, color: '#3498db', desc: "哼，区区10个爱心，本座单手即可拿捏！" },
+        { name: "第二关：无敌水勺的究极磨炼", goal: 20, time: 60, req: 5, color: '#9b59b6', desc: "有点意思，这些干扰物成功引起了本座的注意。" },
+        { name: "第三关：1000%满溢！破碎虚空！", goal: 100, time: 120, req: 10, color: '#2ecc71', desc: "颤抖吧！接下这最后的一百颗爱情大肉丸！" }
+    ];
+
+    let curLvl = 0, score = 0, energy = 0, timeLeft = 60, gameActive = false;
+    let items = [], beam = null, vesselX = canvas.width / 2, mouseX = canvas.width / 2;
+    let buff = { inv: 0, mag: 0, slow: 0 };
+    let shakeAmount = 0, vesselSquash = 1;
+    let lastMilestone = ""; // 记录触发过的进度点
+
+    const shaky = () => Math.random() * 3 - 1.5;
+
+    function showNarrator(txt) {
+        narratorBubble.innerText = "「天之声」: " + txt;
+        narratorBubble.style.opacity = 1;
+        narratorBubble.style.transform = "translateY(-10px)";
+        setTimeout(() => {
+            narratorBubble.style.opacity = 0;
+            narratorBubble.style.transform = "translateY(0)";
+        }, 2500);
+    }
+
+    function drawCross(x, y) {
+        ctx.save(); ctx.translate(x, y);
+        ctx.fillStyle = '#f1c40f'; ctx.strokeStyle = '#333'; ctx.lineWidth = 4;
+        ctx.beginPath();
+        const p = [[-15,-40],[15,-40],[15,-15],[40,-15],[40,15],[15,15],[15,50],[-15,50],[-15,15],[-40,15],[-40,-15],[-15,-15]];
+        p.forEach((pt, i) => i === 0 ? ctx.moveTo(pt[0]+shaky(), pt[1]+shaky()) : ctx.lineTo(pt[0]+shaky(), pt[1]+shaky()));
+        ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.strokeStyle = '#e67e22'; ctx.lineWidth = 2;
+        for(let i=0; i<12; i++) {
+            let a = (i * Math.PI / 6) + Date.now()/800;
+            ctx.beginPath(); ctx.moveTo(Math.cos(a)*55, Math.sin(a)*55); ctx.lineTo(Math.cos(a)*85+shaky(), Math.sin(a)*85+shaky()); ctx.stroke();
+        }
+        ctx.restore();
+    }
+
+    function drawHeart(x, y, s=24) {
+        ctx.save(); ctx.translate(x, y);
+        ctx.fillStyle = '#e74c3c'; ctx.strokeStyle = '#333'; ctx.lineWidth = 2.5;
+        ctx.beginPath(); ctx.moveTo(0,0);
+        ctx.bezierCurveTo(-s/2, -s/2, -s, s/4, 0, s); ctx.bezierCurveTo(s, s/4, s/2, -s/2, 0, 0);
+        ctx.fill(); ctx.stroke(); ctx.restore();
+    }
+
+    function drawVessel(x, y) {
+        ctx.save(); ctx.translate(x, y);
+        const s = (1 + Math.sin(Date.now()/150)*0.07) * vesselSquash;
+        ctx.scale(s, 1/s);
+        ctx.lineWidth = 4; ctx.strokeStyle = '#333';
+        ctx.fillStyle = LEVELS[curLvl].color;
+        ctx.beginPath();
+        ctx.moveTo(-35,-35+shaky()); ctx.quadraticCurveTo(-40, 10, -35, 45+shaky());
+        ctx.lineTo(35, 45+shaky()); ctx.quadraticCurveTo(40, 10, 35,-35+shaky());
+        ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.ellipse(0,-35,35,10,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+        ctx.restore();
+    }
+
+    function drawDust(x, y) {
+        ctx.save(); ctx.translate(x, y);
+        ctx.strokeStyle = '#333'; ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        for(let i=0; i<8; i++) {
+            ctx.moveTo(shaky()*12, shaky()*12); ctx.lineTo(shaky()*15, shaky()*15);
+        }
+        ctx.stroke(); ctx.restore();
+    }
+
+    class Drop {
+        constructor(type, x, y, data = null) {
+            this.type = type; this.data = data;
+            this.x = x || Math.random() * (canvas.width - 60) + 30;
+            this.y = y || -50;
+            const baseSpd = 3.5 + curLvl;
+            this.vx = data?.isExp ? (Math.random() - 0.5) * 20 : 0;
+            this.vy = data?.isExp ? -Math.random() * 15 - 5 : baseSpd + Math.random();
+            this.grav = data?.isExp ? 0.4 : 0;
+        }
+        update() {
+            this.x += this.vx; this.y += this.vy; this.vy += this.grav;
+            if(!this.data?.isExp) this.x += Math.sin(this.y/35)*2.5;
+            if(buff.mag > 0 && this.type === 'heart') {
+                this.x += (vesselX - this.x) * 0.18; this.y += (canvas.height - 100 - this.y) * 0.18;
+            }
+        }
+        draw() {
+            if(this.type === 'heart') drawHeart(this.x, this.y);
+            else if(this.type === 'dust') drawDust(this.x, this.y);
+            else if(this.type === 'weird') {
+                ctx.save(); ctx.font = '40px Arial'; ctx.textAlign = 'center';
+                ctx.fillStyle = this.data.colored ? this.data.color : '#333';
+                ctx.fillText(this.data.icon, this.x, this.y); ctx.restore();
+            }
+        }
+    }
+
+    function setBubble(txt, color) {
+        statusBubble.innerText = txt;
+        statusBubble.style.color = color;
+        setTimeout(() => { if(statusBubble.innerText === txt) statusBubble.innerText = ''; }, 2000);
+    }
+
+    function initLevel(idx) {
+        curLvl = idx;
+        const cfg = LEVELS[idx];
+        score = 0; energy = 0; timeLeft = cfg.time; items = []; beam = null; 
+        buff = { inv: 0, mag: 0, slow: 0 };
+        vesselX = canvas.width / 2; mouseX = canvas.width / 2;
+        lastMilestone = "";
+        lvlTag.innerText = cfg.name;
+        scoreText.innerText = `爱意值: 0 / ${cfg.goal}`;
+        overlay.style.display = 'none';
+        
+        manaContainer.innerHTML = '';
+        for(let i=0; i<cfg.req; i++) {
+            const slot = document.createElement('div');
+            slot.className = 'mana-slot';
+            manaContainer.appendChild(slot);
+        }
+        updateManaUI();
+        gameActive = true;
+    }
+
+    function update() {
+        ctx.save();
+        if(shakeAmount > 0) {
+            ctx.translate(Math.random()*shakeAmount-shakeAmount/2, Math.random()*shakeAmount-shakeAmount/2);
+            shakeAmount *= 0.9;
+        }
+
+        if(gameActive) {
+            ctx.clearRect(-100,-100,canvas.width+200,canvas.height+200);
+
+            timeLeft -= 1/60; timerText.innerText = `残存理智: ${Math.ceil(timeLeft)}s`;
+            if(timeLeft <= 0) endGame(false);
+
+            drawCross(canvas.width/2, 110);
+
+            if(beam) {
+                ctx.fillStyle = 'rgba(243, 156, 18, 0.5)';
+                ctx.fillRect(beam.x - 25, 150, 50, canvas.height);
+                if(Math.abs(beam.x - canvas.width/2) < 70 && !beam.hit) {
+                    beam.hit = true;
+                    shakeAmount = 15;
+                    const goods = [
+                        { icon: '⏰', effect: 'time', color: '#27ae60', colored: true, msg: "续命之钟！" },
+                        { icon: '🦆', effect: 'mag', color: '#2980b9', colored: true, msg: "嘎嘎引力黑洞！" },
+                        { icon: '✨', effect: 'fill', color: '#f1c40f', colored: true, msg: "瞬间满蓝！" }
+                    ];
+                    const bads = [
+                        { icon: '⏳', effect: 'drain', msg: "理智被偷走了！" }, 
+                        { icon: '👻', effect: 'inv', msg: "大脑左右互搏！" }, 
+                        { icon: '🐢', effect: 'slow', msg: "一亿吨的忧郁！" }
+                    ];
+                    for(let i=0; i<6; i++) {
+                        const data = Math.random() > 0.45 ? goods[Math.floor(Math.random()*3)] : bads[Math.floor(Math.random()*3)];
+                        items.push(new Drop('weird', canvas.width/2, 120, {...data, isExp: true}));
+                    }
+                }
+                beam.life--; if(beam.life <= 0) beam = null;
+            }
+
+            let tx = (buff.inv > 0) ? canvas.width - mouseX : mouseX;
+            let ms = buff.slow > 0 ? 0.04 : 0.3;
+            vesselX += (tx - vesselX) * ms;
+            if(vesselSquash > 1) vesselSquash -= 0.05;
+            drawVessel(vesselX, canvas.height - 100);
+
+            const cfg = LEVELS[curLvl];
+            const progress = score / cfg.goal;
+
+            // --- 进度旁白逻辑 ---
+            const texts = INTERACTIVE_TEXTS["lvl" + curLvl];
+            if (progress >= 0.9 && lastMilestone !== "p90") { showNarrator(texts.p90); lastMilestone = "p90"; }
+            else if (progress >= 0.5 && progress < 0.9 && lastMilestone !== "p50") { showNarrator(texts.p50); lastMilestone = "p50"; }
+            else if (progress >= 0.33 && progress < 0.5 && lastMilestone !== "p33") { showNarrator(texts.p33); lastMilestone = "p33"; }
+            else if (progress >= 0.25 && progress < 0.33 && lastMilestone !== "p25") { showNarrator(texts.p25); lastMilestone = "p25"; }
+
+            for(let i=items.length-1; i>=0; i--) {
+                let it = items[i]; it.update(); it.draw();
+                if(it.y > canvas.height - 130 && it.y < canvas.height - 70 && Math.abs(it.x - vesselX) < 45) {
+                    vesselSquash = 1.3;
+                    if(it.type === 'heart') {
+                        if(energy < cfg.req) energy++; 
+                        updateManaUI();
+                        score += 1;
+                    } else if(it.type === 'weird') {
+                        setBubble(it.data.msg, it.data.color || '#333');
+                        if(it.data.effect === 'time') timeLeft += 12;
+                        if(it.data.effect === 'drain') timeLeft -= 8;
+                        if(it.data.effect === 'inv') buff.inv = 350;
+                        if(it.data.effect === 'mag') buff.mag = 500;
+                        if(it.data.effect === 'slow') buff.slow = 300;
+                        if(it.data.effect === 'fill') energy = cfg.req; 
+                        updateManaUI();
+                        score += 3;
+                    } else {
+                        score = Math.max(0, score - 5);
+                    }
+                    
+                    items.splice(i, 1); scoreText.innerText = `爱意值: ${score} / ${cfg.goal}`;
+                    if(score >= cfg.goal) endGame(true);
+                } else if(it.y > canvas.height) items.splice(i, 1);
+            }
+
+            const wave = (Math.sin(Date.now() / 1500) + 1) / 2;
+            const baseChance = 0.04 + (wave * 0.06); 
+            const scarcity = Math.max(0.1, 1 - progress); 
+
+            if(Math.random() < baseChance * scarcity) {
+                const heartProb = (0.75 - progress * 0.7) * (1 + curLvl * 0.1);
+                if(Math.random() < heartProb) items.push(new Drop('heart'));
+                else items.push(new Drop('dust'));
+            }
+
+            if(buff.inv > 0) buff.inv--;
+            if(buff.mag > 0) buff.mag--;
+            if(buff.slow > 0) buff.slow--;
+        }
+        ctx.restore();
+        requestAnimationFrame(update);
+    }
+
+    function updateManaUI() {
+        const slots = document.querySelectorAll('.mana-slot');
+        slots.forEach((s, i) => i < energy ? s.classList.add('active') : s.classList.remove('active'));
+        fireBtn.style.display = energy >= LEVELS[curLvl].req ? 'block' : 'none';
+    }
+
+    function endGame(win) {
+        gameActive = false;
+        overlay.style.display = 'flex';
+        const nextBtn = document.querySelector('.btn-action');
+        if(win) {
+            if(curLvl < 2) {
+                document.getElementById('os-icon').innerText = "😝";
+                document.getElementById('os-title').innerText = "天命达成！";
+                document.getElementById('os-desc').innerText = LEVELS[curLvl].desc + "\n\n恭喜你，宇宙还没有被你的平庸摧毁。";
+                nextBtn.innerText = "挑战下一个位面";
+            } else {
+                document.getElementById('os-icon').innerText = "👑";
+                document.getElementById('os-title').innerText = "跪下！宇宙装不下了！";
+                document.getElementById('os-desc').innerText = "你已证道成桶。整个银河系的爱，现在都在你的碗里。";
+                nextBtn.innerText = "轮回再战";
+            }
+        } else {
+            document.getElementById('os-icon').innerText = "💔";
+            document.getElementById('os-title').innerText = "天命崩塌！";
+            document.getElementById('os-desc').innerText = "你刚才的操作，让我的主板都尴尬地烧出了几个坏点。";
+            nextBtn.innerText = "点击逆天改命";
+        }
+    }
+
+    function handleMenu() {
+        const title = document.getElementById('os-title').innerText;
+        if(title === "跪下！宇宙装不下了！") initLevel(0);
+        else if(title === "天命崩塌！") initLevel(curLvl);
+        else initLevel(curLvl + 1);
+    }
+
+    fireBtn.onclick = (e) => {
+        e.stopPropagation(); 
+        beam = { x: vesselX, life: 30, hit: false };
+        shakeAmount = 8;
+        energy = 0; updateManaUI();
+    };
+
+    window.addEventListener('mousemove', e => mouseX = e.clientX);
+    window.addEventListener('touchstart', e => mouseX = e.touches[0].clientX);
+    window.addEventListener('touchmove', e => { mouseX = e.touches[0].clientX; e.preventDefault(); }, {passive:false});
+
+    initLevel(0);
+    update();
+</script>
+</body>
+</html>

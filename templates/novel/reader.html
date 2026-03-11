@@ -1,0 +1,99 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} | {{ book.title }}</title>
+    <style>
+        body { background: #111; color: #ccc; font-family: 'Georgia', serif; line-height: 1.8; margin: 0; padding: 0; }
+        .reader-container { max-width: 800px; margin: 0 auto; padding: 20px 20px 60px 20px; font-size: 1.2rem; }
+        h1 { color: #82aaff; font-size: 1.5rem; border-bottom: 1px dashed #333; padding-bottom: 15px; margin-bottom: 30px; }
+        .nav-bar { display: flex; justify-content: space-between; margin: 40px 0; padding-top: 20px; border-top: 1px solid #333; }
+        a { color: #ffcb6b; text-decoration: none; padding: 10px 20px; border: 1px solid #333; border-radius: 4px; transition: 0.3s; }
+        a:hover { background: #222; border-color: #ffcb6b; }
+        .disabled { opacity: 0.3; pointer-events: none; border-color: transparent; }
+        .back-btn { position:fixed; top:20px; left:20px; opacity:0.5; font-size:0.8rem; }
+        p { margin-bottom: 1.5em; text-align: justify; }
+        
+        /* 评论区样式 */
+        .comment-box { margin-top: 60px; border-top: 2px solid #333; padding-top: 30px; }
+        .comment-title { font-family: 'Consolas', monospace; color: #ffcb6b; margin-bottom: 20px; font-size: 1rem; }
+        .comment-list { margin-bottom: 30px; }
+        .c-item { background: #1a1c25; padding: 15px; border-radius: 4px; margin-bottom: 10px; font-size: 0.95rem; }
+        .c-meta { font-size: 0.8rem; color: #666; margin-bottom: 5px; display:flex; justify-content:space-between; }
+        .c-user { color: #82aaff; font-weight:bold; }
+        .c-content { color: #ddd; white-space: pre-wrap; }
+        
+        .c-form input, .c-form textarea {
+            width: 100%; box-sizing: border-box; background: #0f111a; border: 1px solid #444; 
+            color: white; padding: 10px; margin-bottom: 10px; font-family: inherit;
+        }
+        .c-form button {
+            background: #ffcb6b; color: #000; border: none; padding: 10px 20px; 
+            cursor: pointer; font-weight: bold; width: 100%;
+        }
+
+        @media (max-width: 768px) {
+            .reader-container { font-size: 1.1rem; padding: 15px; }
+            .back-btn { position: relative; top: 0; left: 0; display: block; margin-bottom: 20px; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+    <div class="reader-container">
+        <a href="{{ url_for('novel.toc', book_id=book.id) }}" class="back-btn">📚 回目录</a>
+        
+        <h1>{{ chapter.title }}</h1>
+        
+        <div class="content">
+            {% for para in chapter.content.split('\n') %}
+            <p>{{ para }}</p>
+            {% endfor %}
+        </div>
+
+        <div class="nav-bar">
+            {% if prev_chap %}
+            <a href="{{ url_for('novel.reader', chapter_id=prev_chap.id) }}">← 上一章</a>
+            {% else %}
+            <a class="disabled">无上一章</a>
+            {% endif %}
+
+            <a href="{{ url_for('novel.toc', book_id=book.id) }}">目录</a>
+
+            {% if next_chap %}
+            <a href="{{ url_for('novel.reader', chapter_id=next_chap.id) }}">下一章 →</a>
+            {% else %}
+            <a class="disabled">无下一章</a>
+            {% endif %}
+        </div>
+
+        <!-- 评论区 -->
+        <div class="comment-box">
+            <div class="comment-title">> 本章书评 (只保留 Top10 + 最新40)</div>
+            
+            <div class="comment-list">
+                {% if comments %}
+                    {% for c in comments %}
+                        <div class="c-item">
+                            <div class="c-meta"><span class="c-user">{{ c.nickname }}</span> <span>{{ c.created_at.strftime('%m-%d %H:%M') }}</span></div>
+                            <div class="c-content">{{ c.content }}</div>
+                        </div>
+                        {% if loop.index == 10 and comments|length > 10 %}
+                        <div style="text-align:center; color:#444; margin:10px 0; font-size:0.8rem;">[ ... 时空折叠区 ... ]</div>
+                        {% endif %}
+                    {% endfor %}
+                {% else %}
+                    <div style="text-align:center; color:#444; padding:20px;">暂无书评，来抢沙发...</div>
+                {% endif %}
+            </div>
+
+            <form class="c-form" method="POST">
+                <input type="text" name="nickname" placeholder="道友请留名 (默认: 书友)" maxlength="20">
+                <textarea name="content" rows="3" placeholder="发表你的高见..." required maxlength="500"></textarea>
+                <button type="submit">发布书评</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

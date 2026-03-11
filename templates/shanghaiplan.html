@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SURHI：上海城市心灵韧性计划</title>
+    <style>
+        /* --- 基础设置 --- */
+        :root {
+            --primary-color: #E6D5B8; /* 温暖的大地米色 */
+            --accent-color: #D47A68; /* 柔和的陶土红 - 象征生命力 */
+            --text-color: #2C3E50;    /* 深灰蓝 - 沉稳 */
+            --bg-dark: #1f252b;       /* 深夜色 */
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, "PingFang SC", "Songti SC", serif;
+            background-color: var(--bg-dark);
+            color: #fff;
+            overflow: hidden;
+        }
+
+        /* --- 滚动容器 --- */
+        .h5-container {
+            height: 100vh;
+            width: 100vw;
+            overflow-y: scroll;
+            scroll-snap-type: y mandatory;
+            scroll-behavior: smooth;
+        }
+
+        section {
+            height: 100vh;
+            width: 100vw;
+            scroll-snap-align: start;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 2.5rem;
+            overflow: hidden;
+            background-size: cover;
+            transition: background 1s ease;
+        }
+
+        /* --- 通用排版 --- */
+        h1 {
+            font-family: "Songti SC", serif;
+            font-size: 2.2rem;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+            letter-spacing: 2px;
+            color: var(--primary-color);
+        }
+
+        h2 {
+            font-size: 1.2rem;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            margin-bottom: 2rem;
+            opacity: 0.8;
+            border-top: 1px solid rgba(255,255,255,0.3);
+            border-bottom: 1px solid rgba(255,255,255,0.3);
+            padding: 10px 0;
+            display: inline-block;
+        }
+
+        h3 {
+            font-size: 1.4rem;
+            margin-bottom: 1rem;
+            color: var(--accent-color);
+        }
+
+        p {
+            font-size: 0.95rem;
+            line-height: 1.8;
+            margin-bottom: 1.5rem;
+            font-weight: 300;
+            color: rgba(255, 255, 255, 0.9);
+            max-width: 500px;
+        }
+
+        .highlight {
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+
+        /* --- 进场动画 --- */
+        .fade-in {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 1s ease-out;
+        }
+
+        section.active .fade-in {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* --- 视觉元素 --- */
+        
+        /* 页面1：晨曦渐变 */
+        #page1 {
+            background: linear-gradient(180deg, #2b3a4a 0%, #4b3d3d 100%);
+        }
+        .logo-circle {
+            width: 120px;
+            height: 120px;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 2rem;
+            position: relative;
+        }
+        .logo-circle::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 1px solid rgba(255,255,255,0.1);
+            animation: pulse 3s infinite;
+        }
+
+        /* 页面2：空间 - 几何线条 */
+        #page2 {
+            background-color: #2F3635; /* 墨绿灰 */
+        }
+        .arch-line {
+            width: 60px;
+            height: 80px;
+            border-top-left-radius: 40px;
+            border-top-right-radius: 40px;
+            border: 2px solid var(--primary-color);
+            border-bottom: none;
+            margin-bottom: 1rem;
+            opacity: 0.6;
+        }
+
+        /* 页面3：社会 - 连接点 */
+        #page3 {
+            background-color: #3E3B36; /* 暖褐灰 */
+        }
+        .connection-dots {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 2rem;
+        }
+        .dot {
+            width: 12px;
+            height: 12px;
+            background: var(--accent-color);
+            border-radius: 50%;
+            animation: bounce 1.5s infinite ease-in-out;
+        }
+        .dot:nth-child(2) { animation-delay: 0.2s; }
+        .dot:nth-child(3) { animation-delay: 0.4s; }
+
+        /* 页面4：时间 - 呼吸圆环 */
+        #page4 {
+            background-color: #253338; /* 深青色 */
+        }
+        .breath-circle {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 2rem 0;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.5s;
+        }
+        .breath-inner {
+            width: 20px;
+            height: 20px;
+            background: var(--primary-color);
+            border-radius: 50%;
+            transition: all 4s ease-in-out;
+        }
+        /* 呼吸动画类 */
+        .breathing .breath-inner {
+            transform: scale(7.5); /* 放大充满 */
+            opacity: 0.3;
+        }
+
+        /* 页面5：结语 */
+        #page5 {
+            background: #111;
+        }
+        
+        .btn-join {
+            padding: 15px 40px;
+            background: transparent;
+            border: 1px solid var(--primary-color);
+            color: var(--primary-color);
+            border-radius: 4px;
+            font-size: 1rem;
+            margin-top: 2rem;
+            cursor: pointer;
+            text-decoration: none;
+            transition: 0.3s;
+        }
+        .btn-join:hover {
+            background: var(--primary-color);
+            color: #111;
+        }
+
+        /* --- 动画关键帧 --- */
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.5; }
+            100% { transform: scale(1.5); opacity: 0; }
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        @keyframes arrowMove {
+            0% { transform: translateX(-50%) translateY(0); opacity: 0.5; }
+            50% { opacity: 1; }
+            100% { transform: translateX(-50%) translateY(10px); opacity: 0.5; }
+        }
+
+        .arrow {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 20px;
+            height: 20px;
+            border-right: 2px solid rgba(255,255,255,0.5);
+            border-bottom: 2px solid rgba(255,255,255,0.5);
+            transform: rotate(45deg);
+            animation: arrowMove 2s infinite;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="h5-container" id="container">
+        
+        <!-- Page 1: 封面 - 概念重塑 -->
+        <section id="page1" class="active">
+            <div class="logo-circle fade-in">
+                <span style="font-size: 2rem; color: var(--primary-color);">S</span>
+            </div>
+            <h2 class="fade-in">Project SURHI</h2>
+            <h1 class="fade-in">上海城市<br>心灵韧性计划</h1>
+            <p class="fade-in" style="margin-top: 1rem; opacity: 0.7;">
+                Urban Resilience & Healing Initiative
+            </p>
+            <p class="fade-in" style="font-size: 0.8rem; margin-top: 2rem;">
+                "让城市不仅高效，而且温暖。"
+            </p>
+            <div class="arrow"></div>
+        </section>
+
+        <!-- Page 2: 空间 - 历史建筑活化 -->
+        <section id="page2">
+            <div class="arch-line fade-in"></div>
+            <h2 class="fade-in">空间重构</h2>
+            <h3 class="fade-in">从“圣所”到“疗愈节点”</h3>
+            <p class="fade-in">
+                利用<span class="highlight">建筑可阅读</span>政策，<br>
+                将老建筑的庭院开放为<b>“静谧花园”</b>。<br>
+                在邬达克设计的穹顶下，<br>
+                举办无声的建筑导赏与午间冥想。
+            </p>
+            <p class="fade-in" style="font-size: 0.8rem; opacity: 0.6;">
+                # 历史与当下的握手
+            </p>
+            <div class="arrow"></div>
+        </section>
+
+        <!-- Page 3: 社会 - 互助共生 -->
+        <section id="page3">
+            <div class="connection-dots fade-in">
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+            </div>
+            <h2 class="fade-in">社会连接</h2>
+            <h3 class="fade-in">从“施舍”到“技能银行”</h3>
+            <p class="fade-in">
+                拒绝单向的慈善。<br>
+                建立<b>“邻里互助网络”</b>：<br>
+                外籍高管教英语，社区老人教包馄饨。<br>
+                <span class="highlight">每个人都是给予者。</span>
+            </p>
+            <p class="fade-in" style="font-size: 0.8rem; opacity: 0.6;">
+                # 治愈原子化的孤独
+            </p>
+            <div class="arrow"></div>
+        </section>
+
+        <!-- Page 4: 时间 - 数字安顿 -->
+        <section id="page4">
+            <h2 class="fade-in">时间伦理</h2>
+            <h3 class="fade-in">上海慢行一小时</h3>
+            <div class="breath-circle fade-in" id="breathBtn">
+                <div class="breath-inner"></div>
+                <span style="position: absolute; font-size: 0.8rem; letter-spacing: 1px;">点击呼吸</span>
+            </div>
+            <p class="fade-in">
+                每周日清晨的<b>“静音行动”</b>。<br>
+                关掉算法推荐，<br>
+                回归面对面的真实与<span class="highlight">当下的安宁</span>。
+            </p>
+            <p id="breathText" style="font-size: 0.8rem; opacity: 0; transition: opacity 1s;">
+                吸气... (Inhale Grace) ... 呼气... (Exhale Anxiety)
+            </p>
+            <div class="arrow"></div>
+        </section>
+
+        <!-- Page 5: 结语 - 盐与光 -->
+        <section id="page5">
+            <h1 class="fade-in" style="font-size: 1.8rem;">做城市的盐与光</h1>
+            <p class="fade-in">
+                不需要改变天际线，<br>
+                我们要改变的是<b>地平线</b>上的关系。
+            </p>
+            <div style="width: 50px; height: 1px; background: var(--primary-color); margin: 20px 0;" class="fade-in"></div>
+            <p class="fade-in">
+                这不仅是一个计划，<br>
+                这是一场关于<b>“爱与连接”</b>的无声革命。
+            </p>
+            
+            <a href="#" class="btn-join fade-in">成为联结者 / Join Us</a>
+            
+            <p class="fade-in" style="font-size: 0.7rem; opacity: 0.3; margin-top: 3rem;">
+                SURHI 2026 © Shanghai Urban Lab
+            </p>
+        </section>
+
+    </div>
+
+    <script>
+        // 滚动监听与动画触发
+        const sections = document.querySelectorAll('section');
+        const container = document.getElementById('container');
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('active');
+                }
+            });
+        }, { threshold: 0.4 });
+
+        sections.forEach(sec => observer.observe(sec));
+
+        // 呼吸交互逻辑
+        const breathBtn = document.getElementById('breathBtn');
+        const breathText = document.getElementById('breathText');
+        
+        breathBtn.addEventListener('click', () => {
+            breathBtn.classList.toggle('breathing');
+            if(breathBtn.classList.contains('breathing')){
+                breathText.style.opacity = 1;
+                // 模拟呼吸的节奏文字变化
+                breathText.innerText = "吸气... (Inhale)";
+                setTimeout(() => { breathText.innerText = "保持... (Hold)"; }, 4000);
+                setTimeout(() => { breathText.innerText = "呼气... (Exhale)"; }, 6000);
+            } else {
+                breathText.style.opacity = 0;
+            }
+        });
+    </script>
+</body>
+</html>

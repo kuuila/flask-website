@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SH_HolyAtlas | 恩宠之路：连锁奇迹</title>
+    <style>
+        :root {
+            --bg: #FFFDF2;
+            --grid: rgba(211, 84, 0, 0.08);
+            --gold: #D4AF37;
+            --candle: #E67E22;
+            --cath: #C0392B;
+            --prot: #2E5984;
+            --space: #27AE60;
+            --text: #3E2723;
+        }
+
+        body, html {
+            margin: 0; padding: 0; background: var(--bg);
+            background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+            background-size: 30px 30px; font-family: "Source Serif Pro", serif; color: var(--text);
+            overflow: hidden; height: 100vh;
+        }
+
+        /* --- 玩家状态 HUD (泰泽暖光) --- */
+        #hud {
+            position: fixed; top: 0; width: 100%; height: 100px;
+            background: rgba(255, 253, 242, 0.96); backdrop-filter: blur(15px);
+            z-index: 2000; border-bottom: 2px solid var(--gold);
+            display: grid; grid-template-columns: repeat(3, 1fr); padding: 10px; box-sizing: border-box;
+        }
+        .stat-group { display: flex; flex-direction: column; justify-content: center; }
+        .bar-bg { width: 85%; height: 6px; background: #E0E0E0; border-radius: 3px; margin: 2px 0; overflow: hidden; }
+        .bar-fill { height: 100%; transition: 0.6s ease; }
+        .label { font-size: 9px; color: #999; letter-spacing: 1px; }
+        .val { font-size: 14px; font-weight: bold; color: var(--candle); }
+
+        /* --- 地图引擎 --- */
+        #map-container {
+            position: fixed; top: 100px; width: 100%; height: 38vh;
+            z-index: 1000; overflow: hidden;
+        }
+        .marker {
+            position: absolute; width: 12px; height: 12px; border-radius: 50%;
+            border: 2px solid #FFF; transform: translate(-50%, -50%); transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer; z-index: 10;
+        }
+        .marker-cath { background: var(--cath); box-shadow: 0 0 10px var(--cath); }
+        .marker-prot { background: var(--prot); box-shadow: 0 0 10px var(--prot); }
+        .marker-space { background: var(--space); box-shadow: 0 0 10px var(--space); }
+        .marker.active { transform: translate(-50%, -50%) scale(2.5); z-index: 100; box-shadow: 0 0 30px var(--gold); }
+        
+        #player {
+            position: absolute; width: 18px; height: 18px; background: var(--gold);
+            border-radius: 50%; border: 3px solid #FFF; z-index: 200;
+            box-shadow: 0 0 20px var(--gold);
+            transition: left 4s linear, top 4s linear; /* 平滑行进 */
+        }
+
+        /* --- 内容区域 --- */
+        #drawer {
+            position: absolute; top: calc(38vh + 100px); width: 100%; height: calc(62vh - 100px);
+            background: var(--bg); border-radius: 30px 30px 0 0;
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.05); z-index: 500;
+            padding: 20px; box-sizing: border-box; overflow-y: auto;
+        }
+
+        #journey-progress {
+            display: none; background: #FDF2E9; border: 1px solid var(--gold);
+            padding: 15px; border-radius: 15px; text-align: center; margin-bottom: 15px;
+        }
+
+        .card { background: white; border-radius: 20px; padding: 20px; border: 1px solid #F0E6D2; margin-bottom: 15px; }
+        .btn {
+            background: var(--candle); color: #FFF; border: none; padding: 12px;
+            border-radius: 12px; width: 100%; cursor: pointer; font-size: 14px; margin-top: 10px;
+        }
+        .btn:disabled { background: #CCC; cursor: wait; }
+
+        .tab-nav { display: flex; justify-content: space-around; border-bottom: 1px solid #EEE; margin-bottom: 15px; }
+        .tab { font-size: 11px; padding: 10px 0; opacity: 0.4; cursor: pointer; }
+        .tab.active { opacity: 1; border-bottom: 2px solid var(--candle); color: var(--candle); }
+
+        /* --- 弹窗图层 (事件系统) --- */
+        #overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); z-index: 5000; display: none; align-items: center; justify-content: center;
+        }
+        .modal { 
+            width: 80%; background: white; border-radius: 25px; padding: 30px; 
+            text-align: center; border: 3px solid var(--gold);
+            animation: modalPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes modalPop { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    </style>
+</head>
+<body>
+
+<div id="hud">
+    <div class="stat-group">
+        <span class="label">意志 (HP)</span>
+        <div class="bar-bg"><div id="hp-bar" class="bar-fill" style="background:var(--cath); width:100%;"></div></div>
+        <span class="label">神粮 (HG)</span>
+        <div class="bar-bg"><div id="hg-bar" class="bar-fill" style="background:var(--space); width:100%;"></div></div>
+    </div>
+    <div class="stat-group" style="text-align: center;">
+        <span class="label">恩宠币 (COIN)</span>
+        <span class="val" id="val-coin">120</span>
+        <span class="label">寻路者 Lv.4</span>
+    </div>
+    <div class="stat-group" style="text-align: right;">
+        <span class="label">灵性 (EXP)</span>
+        <span class="val" id="val-exp">340</span>
+        <span class="label">负重: 2/10</span>
+    </div>
+</div>
+
+<div id="map-container">
+    <div id="map-root" style="position:relative; width:100%; height:100%;">
+        <div id="player" style="left: 45%; top: 55%;"></div>
+    </div>
+</div>
+
+<div id="drawer">
+    <div id="journey-progress">
+        <div id="journey-text">正在穿越弄堂...</div>
+        <div class="bar-bg" style="width:100%; margin-top:10px;"><div id="journey-bar" class="bar-fill" style="background:var(--gold); width:0%;"></div></div>
+    </div>
+
+    <div class="card" id="main-panel">
+        <h2 id="p-name" style="margin:0; color:var(--candle);">SH_HolyAtlas</h2>
+        <p id="p-addr" style="font-size:11px; color:#999; margin:5px 0 20px 0;"></p>
+
+        <div class="tab-nav">
+            <div class="tab active" onclick="ui.tab(0)">圣事/动态</div>
+            <div class="tab" onclick="ui.tab(1)">学术/副本</div>
+            <div class="tab" onclick="ui.tab(2)">教友分享</div>
+            <div class="tab" onclick="ui.tab(3)">圣物贸易</div>
+        </div>
+
+        <div id="sec-info" class="pane">
+            <div id="info-content" style="font-size:14px; line-height:1.6;">请点击地图坐标开启。</div>
+            <button class="btn" id="btn-move" onclick="engine.startJourney()">以此为目标出发 (耗费 15 HG)</button>
+            <button class="btn" id="btn-pray" style="display:none;" onclick="engine.pray()">参与圣事签到 (+20 币)</button>
+        </div>
+
+        <div id="sec-acad" class="pane" style="display:none;">
+            <div id="acad-content" style="font-size:13px; color:#5D4037; text-align:justify;"></div>
+            <button class="btn" onclick="engine.study()">深度炼灵 5s (+50 EXP)</button>
+        </div>
+
+        <div id="sec-comm" class="pane" style="display:none;">
+            <div id="comm-list"></div>
+        </div>
+
+        <div id="sec-trade" class="pane" style="display:none;">
+            <div style="font-size:12px; color:var(--gold);">堂区特产 (Trade)</div>
+            <div id="trade-item" style="padding:15px; background:#F9F9F9; border-radius:10px; margin-top:10px;"></div>
+        </div>
+    </div>
+</div>
+
+<div id="overlay">
+    <div class="modal">
+        <div style="font-size: 40px; margin-bottom: 10px;" id="ev-icon">✨</div>
+        <h3 id="ev-title" style="margin:0; color:var(--candle);">连锁事件</h3>
+        <p id="ev-desc" style="font-size:14px; color:#666; line-height:1.6; margin:15px 0;"></p>
+        <button class="btn" onclick="engine.continueJourney()">继续前行</button>
+    </div>
+</div>
+
+<script>
+// --- 全量坐标数据 ---
+const locations = [
+    { name: "徐家汇圣依纳爵堂", type: "cath", x: 42, y: 65, addr: "蒲汇塘路158号", acad: "上海主教座堂，远东哥特巅峰。其双尖塔象征信仰对理性的飞跃，建筑内纵向神学引导信徒向上仰望。", item: "光启密卷" },
+    { name: "NCHS School (149号)", type: "space", x: 48, y: 56, addr: "建国中路149号", acad: "弄堂灵性实验室。将信仰融入数字游民生活，是典型的‘第三空间’实践地。", item: "弄堂咖啡" },
+    { name: "圣伯多禄堂", type: "cath", x: 50, y: 52, addr: "重庆南路270号", acad: "拜占庭穹顶象征共融。上海泰泽祈祷核心，职场教友的灵魂驿站。", item: "泰泽烛火" },
+    { name: "鸿德堂", x: 62, y: 25, addr: "多伦路59号", acad: "中式歇山顶教堂杰作。展示了福音如何尝试在中国传统符号系统中扎根生长。", item: "文化印记" },
+    { name: "佘山圣母大殿", x: 15, y: 80, addr: "松江区佘山顶", acad: "宗座圣殿，红色砖石朝圣地。每一级台阶都是对意志的磨炼。", item: "佘山圣水" }
+];
+
+// --- 连锁事件库 ---
+const eventPool = [
+    { t: "路遇泰泽歌声", d: "穿过老弄堂，听见隐约赞美诗。HP +10, 灵性 +20", hp: 10, exp: 20, i: "🕊️" },
+    { t: "职场邮件突袭", d: "突然收到急件提醒。心情烦躁，神粮消耗加速。HG -10", hg: -10, i: "📧" },
+    { t: "偶遇圣徒NPC", d: "一位老教友送给你一块面包。HG +20", hg: 20, i: "🍞" },
+    { t: "历史建筑感悟", d: "路过一处优秀历史建筑，触发学术灵感。EXP +50", exp: 50, i: "📜" },
+    { t: "街道噪音干扰", d: "过度的交通噪音让你心神不宁。HP -10", hp: -10, i: "📢" },
+    { t: "发现恩宠币", d: "在弄堂转角的砖缝里捡到了遗落的币。Coin +15", coin: 15, i: "💰" }
+];
+
+// --- 核心引擎 ---
+const engine = {
+    player: { hp: 100, hg: 100, coin: 120, exp: 340 },
+    isMoving: false,
+    currentMove: { target: null, eventCount: 0, maxEvents: 0 },
+
+    startJourney() {
+        if(!this.currentMove.target || this.isMoving) return;
+        if(this.player.hg < 15) return alert("神粮不足，请先补给。");
+
+        this.isMoving = true;
+        this.player.hg -= 15;
+        this.updateHUD();
+
+        // 随机 3-5 个事件
+        this.currentMove.maxEvents = Math.floor(Math.random() * 3) + 3;
+        this.currentMove.eventCount = 0;
+
+        document.getElementById('main-panel').style.display = 'none';
+        document.getElementById('journey-progress').style.display = 'block';
+        
+        // 开始移动
+        const p = document.getElementById('player');
+        p.style.left = this.currentMove.target.x + '%';
+        p.style.top = this.currentMove.target.y + '%';
+
+        this.triggerNextEvent();
+    },
+
+    triggerNextEvent() {
+        if(this.currentMove.eventCount < this.currentMove.maxEvents) {
+            const delay = 1000 + Math.random() * 500;
+            setTimeout(() => {
+                const ev = eventPool[Math.floor(Math.random()*eventPool.length)];
+                this.showEvent(ev);
+                this.applyEvent(ev);
+            }, delay);
+        } else {
+            setTimeout(() => { this.arrive(); }, 1000);
+        }
+    },
+
+    showEvent(ev) {
+        document.getElementById('ev-icon').innerText = ev.i;
+        document.getElementById('ev-title').innerText = ev.t;
+        document.getElementById('ev-desc').innerText = ev.d;
+        document.getElementById('overlay').style.display = 'flex';
+    },
+
+    continueJourney() {
+        document.getElementById('overlay').style.display = 'none';
+        this.currentMove.eventCount++;
+        const progress = (this.currentMove.eventCount / this.currentMove.maxEvents) * 100;
+        document.getElementById('journey-bar').style.width = progress + '%';
+        this.triggerNextEvent();
+    },
+
+    applyEvent(ev) {
+        if(ev.hp) this.player.hp = Math.min(100, this.player.hp + ev.hp);
+        if(ev.hg) this.player.hg = Math.max(0, this.player.hg + ev.hg);
+        if(ev.coin) this.player.coin += ev.coin;
+        if(ev.exp) this.player.exp += ev.exp;
+        this.updateHUD();
+    },
+
+    arrive() {
+        this.isMoving = false;
+        document.getElementById('journey-progress').style.display = 'none';
+        document.getElementById('main-panel').style.display = 'block';
+        document.getElementById('btn-move').style.display = 'none';
+        document.getElementById('btn-pray').style.display = 'block';
+        document.getElementById('info-content').innerText = "你已抵达。此处的网格能量正在滋养你。";
+    },
+
+    pray() {
+        this.player.coin += 20; this.player.exp += 15;
+        this.updateHUD();
+        alert("签到成功。恩宠 +20 币");
+    },
+
+    updateHUD() {
+        document.getElementById('hp-bar').style.width = this.hp + '%';
+        document.getElementById('hg-bar').style.width = this.hg + '%';
+        document.getElementById('val-coin').innerText = this.player.coin;
+        document.getElementById('val-exp').innerText = this.player.exp;
+        if(this.player.hp <= 0) alert("意志耗尽，请寻找补给！");
+    }
+};
+
+const ui = {
+    renderMarkers() {
+        const root = document.getElementById('map-root');
+        locations.forEach(loc => {
+            const m = document.createElement('div');
+            m.className = `marker marker-${loc.type || 'cath'}`;
+            m.style.left = loc.x + '%'; m.style.top = loc.y + '%';
+            m.onclick = () => {
+                if(engine.isMoving) return;
+                document.querySelectorAll('.marker').forEach(x => x.classList.remove('active'));
+                m.classList.add('active');
+                this.showLoc(loc);
+            };
+            root.appendChild(m);
+        });
+    },
+    showLoc(loc) {
+        engine.currentMove.target = loc;
+        document.getElementById('p-name').innerText = loc.name;
+        document.getElementById('p-addr').innerText = `📍 ${loc.addr}`;
+        document.getElementById('info-content').innerText = "圣地待机中... 点击下方按钮出发。";
+        document.getElementById('acad-content').innerText = loc.acad;
+        document.getElementById('trade-item').innerText = `本处特产：${loc.item} (可兑换)`;
+        document.getElementById('btn-move').style.display = 'block';
+        document.getElementById('btn-move').innerText = `以此为目的地 (HG -15)`;
+        document.getElementById('btn-pray').style.display = 'none';
+        this.tab(0);
+    },
+    tab(idx) {
+        const panes = ['sec-info', 'sec-acad', 'sec-comm', 'sec-trade'];
+        panes.forEach((p, i) => {
+            document.getElementById(p).style.display = (i === idx) ? 'block' : 'none';
+            document.querySelectorAll('.tab')[i].classList.toggle('active', i === idx);
+        });
+    }
+};
+
+window.onload = () => { ui.renderMarkers(); };
+</script>
+
+</body>
+</html>

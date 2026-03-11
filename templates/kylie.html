@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <title>KYLIE LEE | Artist & Writer - Portfolio</title>
+    <meta name="description" content="Exploring the boundaries between memory, belief, and digital culture.">
+    <meta property="og:title" content="KYLIE LEE | Portfolio">
+    <meta property="og:description" content="KYLIE LEE！KYLIE LEE！">
+    <meta property="og:image" content="http://www.mxle.net/static/kylie_sig.jpg">
+
+    <!-- 艺术字体：中/英/韩/等宽 -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@200;400;700&family=Noto+Serif+KR:wght@200;400;600&family=Playfair+Display:ital,wght@0,400;1,600&family=JetBrains+Mono:wght@100&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg: #050505;
+            --text: #f0f0f0;
+            --accent: #4a90e2; 
+            --gold: #c5a059;   
+            --glass: rgba(5, 5, 5, 0.85);
+            --line: rgba(255, 255, 255, 0.1);
+            --nav-height: 80px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body, html { 
+            background-color: var(--bg); color: var(--text);
+            font-family: 'Noto Serif SC', 'Noto Serif KR', serif;
+            scroll-behavior: smooth; overflow-x: hidden;
+        }
+
+        /* 电影纹理与扫描线 */
+        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: url('https://www.transparenttextures.com/patterns/stardust.png'); opacity: 0.15; pointer-events: none; z-index: 4000; }
+        .scanline { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to bottom, rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%); background-size: 100% 4px; z-index: 3999; pointer-events: none; opacity: 0.15; }
+
+        /* --- 修正后的固定导航栏 --- */
+        header {
+            position: fixed; top: 0; width: 100%; height: var(--nav-height);
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 5%; z-index: 5000; transition: all 0.4s ease;
+            backdrop-filter: blur(0px); border-bottom: 1px solid transparent;
+        }
+
+        header.scrolled {
+            height: 60px; background: var(--glass);
+            backdrop-filter: blur(15px); border-bottom: 1px solid var(--line);
+        }
+
+        .nav-logo {
+            font-family: 'Playfair Display', serif; font-size: 1.3rem;
+            letter-spacing: 4px; text-decoration: none; color: #fff; font-weight: 200;
+        }
+
+        .nav-links { display: flex; gap: 30px; align-items: center; }
+        .nav-links a {
+            text-decoration: none; color: #fff; font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem; letter-spacing: 2px; text-transform: uppercase;
+            transition: 0.3s; opacity: 0.6;
+        }
+        .nav-links a:hover { opacity: 1; color: var(--gold); }
+
+        .nav-location {
+            font-size: 0.6rem; letter-spacing: 2px; color: var(--accent);
+            font-family: 'JetBrains Mono', monospace; text-align: right; line-height: 1.4;
+        }
+
+        /* --- 布局容器 --- */
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 40px; }
+
+        .hero {
+            height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;
+        }
+        .hero h1 { font-family: 'Playfair Display', serif; font-size: clamp(2.2rem, 8vw, 5.5rem); font-weight: 200; letter-spacing: 15px; margin-bottom: 20px; }
+        .hero-tags { font-family: 'JetBrains Mono', monospace; color: var(--accent); font-size: 0.8rem; letter-spacing: 6px; }
+
+        /* 哲学宣言 */
+        .section-manifesto { padding: 150px 0; background: rgba(10,10,10,0.5); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+        .manifesto-block { text-align: center; max-width: 900px; margin: 0 auto; }
+        .quote-zh { font-size: 1.3rem; color: var(--gold); margin-bottom: 20px; letter-spacing: 2px; }
+        .quote-en { font-family: 'Playfair Display', serif; font-style: italic; font-size: 1.1rem; color: #888; margin-bottom: 20px; }
+        .quote-kr { font-size: 0.95rem; color: #555; letter-spacing: 1px; }
+
+        /* 简历部分 */
+        .section-bio { padding: 150px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 80px; }
+        .bio-title { font-family: 'Playfair Display', serif; font-size: 2.2rem; color: var(--gold); margin-bottom: 40px; }
+        .bio-content p { margin-bottom: 25px; line-height: 1.8; text-align: justify; font-weight: 300; }
+        .lang-kr { color: #888; font-size: 0.9rem; }
+        .lang-en { color: #666; font-family: 'Playfair Display', serif; font-size: 0.85rem; font-style: italic; }
+
+        .cv-list { list-style: none; margin-top: 40px; }
+        .cv-item { margin-bottom: 20px; display: flex; align-items: baseline; }
+        .cv-year { font-family: 'JetBrains Mono', monospace; color: var(--accent); min-width: 80px; font-size: 0.8rem; }
+        .cv-detail { font-size: 0.85rem; color: #bbb; line-height: 1.6; }
+
+        /* 作品集部分 */
+        .section-works { padding-bottom: 150px; }
+        .works-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: 100px 60px; }
+        
+        .work-card { position: relative; transition: 0.5s; }
+        .work-image-container { 
+            width: 100%; aspect-ratio: 4/5; background: #111; overflow: hidden; margin-bottom: 25px; 
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .work-image-container img { width: 100%; height: 100%; object-fit: cover; filter: grayscale(100%) brightness(0.7); transition: 0.8s cubic-bezier(0.4, 0, 0.2, 1); }
+        .work-card:hover img { filter: grayscale(0%) brightness(1); transform: scale(1.03); }
+
+        .work-info h3 { font-family: 'Playfair Display', serif; font-size: 1.5rem; font-weight: 400; color: var(--gold); margin-bottom: 8px; }
+        .work-meta { font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; color: var(--accent); letter-spacing: 2px; display: block; margin-bottom: 15px; }
+        .work-description { font-size: 0.8rem; line-height: 1.7; color: #999; }
+        .work-description span { display: block; margin-bottom: 5px; }
+
+        /* 页脚 */
+        footer { padding: 120px 0; text-align: center; border-top: 1px solid var(--line); }
+        .footer-logo { font-family: 'Playfair Display', serif; font-size: 2rem; color: var(--gold); margin-bottom: 20px; }
+        .contact-link { color: var(--accent); text-decoration: none; font-family: 'JetBrains Mono', monospace; border-bottom: 1px solid var(--accent); padding-bottom: 5px; }
+
+        /* 响应式媒体查询 */
+        @media (max-width: 768px) {
+            header { padding: 0 20px; }
+            .nav-location { display: none; }
+            .nav-links { gap: 15px; }
+            .section-bio { grid-template-columns: 1fr; gap: 50px; }
+            .works-grid { grid-template-columns: 1fr; }
+            .hero h1 { letter-spacing: 8px; }
+            .quote-zh { font-size: 1.1rem; }
+        }
+
+        /* 手机横屏优化 */
+        @media (max-height: 500px) and (orientation: landscape) {
+            header { height: 50px; }
+            header.scrolled { height: 45px; }
+            .hero { padding-top: 60px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="overlay"></div>
+<div class="scanline"></div>
+
+<!-- 固定标题栏 -->
+<header id="navbar">
+    <a href="#" class="nav-logo">KYLIE LEE</a>
+    <nav class="nav-links">
+        <a href="#about">About</a>
+        <a href="#works">Works</a>
+        <a href="#contact">Contact</a>
+    </nav>
+    <div class="nav-location">
+        [ SEOUL / SINGAPORE ]<br>
+        <span style="font-size: 0.5rem; opacity: 0.5;">예술과 기록</span>
+    </div>
+</header>
+
+<!-- Hero Section -->
+<section class="hero" id="home">
+    <h1>KYLIE LEE</h1>
+    <div class="hero-tags">ARTIST & WRITER / NAFA</div>
+</section>
+
+<!-- Section: Manifesto (三语) -->
+<section class="section-manifesto">
+    <div class="container manifesto-block">
+        <div class="quote-zh">我们渴求雄辩，渴求知识，喂养贪婪，却又努力寻求终结。</div>
+        <div class="quote-en">"We hunger for eloquence, thirst for knowledge, feed our greed, yet we endeavor to conclude."</div>
+        <div class="quote-kr">우리는 유창함을 갈망하고, 지식을 갈구하며, 탐욕을 채우면서도 결국 결론을 맺으려 노력한다.</div>
+        
+        <div style="width: 40px; height: 1px; background: var(--gold); margin: 50px auto;"></div>
+        
+        <div class="quote-zh" style="font-size: 1rem; opacity: 0.8;">触不可及方为最渴求。</div>
+        <div class="quote-kr" style="font-size: 0.9rem; color: #444;">닿을 수 없는 것이 가장 갈망하는 것이다.</div>
+    </div>
+</section>
+
+<!-- Section: Biography (带韩文) -->
+<section class="section-bio container" id="about">
+    <div class="bio-left">
+        <h2 class="bio-title">艺术简历<br><small style="font-size: 0.4em; color: #666; letter-spacing: 5px;">BIOGRAPHY / 프로필</small></h2>
+        <div class="bio-content">
+            <p class="zh">Kylie Lee 是一位常驻首尔与新加坡的艺术家与写作者，目前就读于南洋艺术学院（NAFA）美术学士课程。她的创作聚焦记忆、信念与数字文化之间不断变化的边界。</p>
+            <p class="lang-kr">서울과 싱가포르를 기반으로 활동하는 Kylie Lee는 텍스트, 기술, 설치 미술을 넘나들며 기억과 신념, 그리고 디지털 문화 사이의 경계를 탐구합니다. AI 시스템과 내러티브 알고리즘을 결합하여 개인의 심리적 영역을 재구상합니다.</p>
+        </div>
+    </div>
+    <div class="bio-right">
+        <h3 style="color: var(--gold); margin-bottom: 30px; font-weight: 400; letter-spacing: 3px;">HONORS / 수상</h3>
+        <ul class="cv-list">
+            <li class="cv-item">
+                <span class="cv-year">2023</span>
+                <span class="cv-detail">Gog Sing Hooi Scholarship / 吴新辉奖学金<br><small>오신휘 장학금 (Diploma in Fine Arts)</small></span>
+            </li>
+            <li class="cv-item">
+                <span class="cv-year">2022</span>
+                <span class="cv-detail">Tan Chay Bing Entry Scholarship / 陈再明入学奖学金<br><small>탄채빙 입학 장학금</small></span>
+            </li>
+            <li class="cv-item">
+                <span class="cv-year">Seoul</span>
+                <span class="cv-detail">Solo Photography Exhibition (Government-supported)<br>个人摄影展 (政府资助) / 정부 지원 개인 사진전</span>
+            </li>
+        </ul>
+    </div>
+</section>
+
+<!-- Section: Portfolio (全部 6 幅作品) -->
+<section class="section-works container" id="works">
+    <h2 class="bio-title" style="text-align: center; margin-bottom: 80px;">精选作品<br><small style="font-size: 0.4em; color: #666; letter-spacing: 5px;">SELECTED WORKS / 주요 작품集</small></h2>
+    
+    <div class="works-grid">
+        
+        <!-- 1. A life -->
+        <div class="work-card">
+            <div class="work-image-container"><img src="/static/kylie/ky4.jpg" alt="A life"></div>
+            <div class="work-info">
+                <span class="work-meta">// PAINTING / 1850 x 1300 mm</span>
+                <h3>A life (2023)</h3>
+                <div class="work-description">
+                    <span><strong>[ZH]</strong> 探讨了生命中对知识的渴求与对存在终结的追求。</span>
+                    <span class="lang-kr"><strong>[KR]</strong> 지식에 대한 갈망과 존재의 종결에 대한 추구를 탐구합니다.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Tiger, brother -->
+        <div class="work-card">
+            <div class="work-image-container"><img src="/static/kylie/ky5.jpg" alt="Tiger, brother"></div>
+            <div class="work-info">
+                <span class="work-meta">// PAINTING / 700 x 1000 mm</span>
+                <h3>Tiger, brother (2024)</h3>
+                <div class="work-description">
+                    <span><strong>[ZH]</strong> 受韩国民间传说启发。质疑面对死亡时“孝”与真实情感的张力。</span>
+                    <span class="lang-kr"><strong>[KR]</strong> 한국 전래동화에서 영감을 받아 죽음과 애도 속에서의 '효'와 진실된 감정 사이의 긴장을 질문합니다.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Self Portrait -->
+        <div class="work-card">
+            <div class="work-image-container"><img src="/static/kylie/ky1.jpg" alt="Self Portrait"></div>
+            <div class="work-info">
+                <span class="work-meta">// PAINTING / ACRYLIC ON CANVAS</span>
+                <h3>Self Portrait (2023)</h3>
+                <div class="work-description">
+                    <span><strong>[ZH]</strong> 通过视觉映射对自我认知进行重构。</span>
+                    <span class="lang-kr"><strong>[KR]</strong> 시각적 매핑을 통한 자아 인식의 재구성.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. In my room -->
+        <div class="work-card">
+            <div class="work-image-container"><img src="/static/kylie/ky3.jpg" alt="In my room"></div>
+            <div class="work-info">
+                <span class="work-meta">// PRINTMAKING / INK ON PAPER</span>
+                <h3>In my room (2023)</h3>
+                <div class="work-description">
+                    <span><strong>[ZH]</strong> 私人空间的心理制图，探讨被隔离环境下的感知边界。</span>
+                    <span class="lang-kr"><strong>[KR]</strong> 개인 공간의 심리적 매핑, 고립된 환경에서의 지각의 경계를 조사합니다.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. Memento -->
+        <div class="work-card">
+            <div class="work-image-container"><img src="/static/kylie/ky6.jpg" alt="Memento"></div>
+            <div class="work-info">
+                <span class="work-meta">// PAINTING / 430 x 570 mm</span>
+                <h3>Memento (2024)</h3>
+                <div class="work-description">
+                    <span><strong>[ZH]</strong> 关于记忆碎片的留存与物质化。</span>
+                    <span class="lang-kr"><strong>[KR]</strong> 기억 파편의 보존과 물질화에 대하여.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 6. In the rain -->
+        <div class="work-card">
+            <div class="work-image-container"><img src="/static/kylie/ky2.jpg" alt="In the rain"></div>
+            <div class="work-info">
+                <span class="work-meta">// PRINTMAKING / INK ON PAPER</span>
+                <h3>In the rain (2023)</h3>
+                <div class="work-description">
+                    <span><strong>[ZH]</strong> 捕捉自然景象与瞬时情绪的偶然性碰撞。</span>
+                    <span class="lang-kr"><strong>[KR]</strong> 자연의 풍경과 순간적인 감정의 우연한 충돌을 포착합니다.</span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</section>
+
+<!-- Footer -->
+<footer id="contact">
+    <div class="footer-logo">KYLIE LEE</div>
+    <div style="margin-bottom: 40px; font-size: 0.7rem; color: #666; letter-spacing: 2px;">
+        MEMORIES // BELIEFS // DIGITAL CULTURE<br>기억 // 신념 // 디지털 문화
+    </div>
+    <p style="margin-bottom: 20px;">
+        <a href="mailto:inherkissitastethebeach@gmail.com" class="contact-link">CONNECT VIA EMAIL / 이메일 문의</a>
+    </p>
+    <div style="font-size: 0.6rem; color: #444; margin-top: 50px;">
+        © 2026 KYLIE LEE. ALL RIGHTS RESERVED. <br>
+        NAFA | SINGAPORE | SEOUL | SHANGHAI
+    </div>
+</footer>
+
+<script>
+    // 导航栏滚动效果
+    const navbar = document.getElementById('navbar');
+    window.onscroll = function() {
+        if (window.pageYOffset > 50) {
+            navbar.classList.add('scrolled');
+        } else {
+            navbar.classList.remove('scrolled');
+        }
+    };
+
+    // 鼠标背景交互
+    document.addEventListener('mousemove', (e) => {
+        const x = e.clientX / window.innerWidth;
+        const y = e.clientY / window.innerHeight;
+        document.body.style.background = `radial-gradient(circle at ${x*100}% ${y*100}%, #121212 0%, #050505 100%)`;
+    });
+</script>
+
+</body>
+</html>

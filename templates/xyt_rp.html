@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2025息焉堂述职</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.3.1/reveal.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- 引入艺术字体 -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --klein-blue: #002FA7;
+            --sacred-gold: #C5A059;
+            --paper-base: #F4F1DE; /* 核心宣纸色 */
+            --ink-black: #2C3E50;
+        }
+
+        /* 全局宣纸底色与纹理 */
+        .reveal {
+            background-color: var(--paper-base) !important;
+            background-image: url('https://www.transparenttextures.com/patterns/handmade-paper.png');
+            color: var(--ink-black);
+            font-family: 'Noto Serif SC', serif;
+        }
+
+        /* 放大标题字体，增加神圣感 */
+        h1 { 
+            font-family: "Kaiti", "楷体", serif !important; 
+            font-size: 3.5em !important; 
+            color: var(--klein-blue) !important;
+            text-shadow: 2px 2px 0px rgba(197, 160, 89, 0.2) !important;
+            margin-bottom: 0.5em !important;
+        }
+
+        h2 { 
+            font-family: "Kaiti", "楷体", serif !important; 
+            font-size: 2.5em !important;
+            color: var(--klein-blue) !important;
+            border-left: 12px solid var(--sacred-gold);
+            padding-left: 25px !important;
+            margin-bottom: 1em !important;
+            text-align: left;
+        }
+
+        /* 巨型数字突出生命感 */
+        .big-num {
+            font-family: 'Cinzel', serif;
+            font-size: 5em !important;
+            font-weight: 700;
+            color: var(--klein-blue);
+            line-height: 1;
+        }
+
+        /* 西式拜占庭圆拱元素（克莱因蓝线条） */
+        .byzantine-arch {
+            border: 3px solid var(--klein-blue);
+            border-radius: 50% 50% 0 0 / 40% 40% 0 0;
+            padding: 50px;
+            margin: 20px;
+            background: rgba(0, 47, 167, 0.02);
+        }
+
+        /* 烛光动效 */
+        .taize-flame {
+            width: 12px; height: 12px;
+            background: #E67E22;
+            border-radius: 50%;
+            display: inline-block;
+            box-shadow: 0 0 20px #E67E22;
+            animation: flicker 2s infinite ease-in-out;
+            margin-right: 15px;
+        }
+        @keyframes flicker { 0%, 100% { opacity: 0.4; transform: scale(1); } 50% { opacity: 1; transform: scale(1.4); } }
+
+        /* 模拟光影切分：丁达尔效应 */
+        .light-ray {
+            position: absolute;
+            top: -50%; left: 10%; width: 150px; height: 200%;
+            background: linear-gradient(to right, transparent, rgba(255,255,255,0.4), transparent);
+            transform: rotate(25deg);
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        /* 乡土印章 */
+        .seal {
+            border: 3px solid #B22222;
+            color: #B22222;
+            padding: 5px 15px;
+            font-weight: bold;
+            font-family: "Kaiti", serif;
+            display: inline-block;
+            transform: rotate(-12deg);
+            margin-top: 30px;
+        }
+    </style>
+</head>
+<body>
+    <div class="reveal">
+        <!-- 贯穿全场的光影效果 -->
+        <div class="light-ray"></div>
+        
+        <div class="slides">
+
+            <!-- Slide 1: 封面 -->
+            <section>
+                <div class="byzantine-arch">
+                    <p style="font-family:'Cinzel'; letter-spacing: 6px; color: var(--sacred-gold);">JUBILAEUM A.D. 2025</p>
+                    <h1>年度述职报告</h1>
+                    <p style="font-size: 1.8em; color: var(--ink-black); letter-spacing: 4px;">上海教区 · 息焉堂</p>
+                    <div style="width: 80px; height: 2px; background: var(--ink-black); margin: 30px auto;"></div>
+                    <p style="font-size: 1em; opacity: 0.8;">本堂神父 敬呈</p>
+                    <div class="seal">主佑平安</div>
+                </div>
+            </section>
+
+            <!-- Slide 2: 教务详情 -->
+            <section>
+                <h2>壹 · 教务情况统计</h2>
+                <div style="display: flex; gap: 40px; align-items: center; text-align: left;">
+                    <div style="flex: 1;">
+                        <p style="font-size: 1.2em;">本年度领洗信友</p>
+                        <span class="big-num">31</span><span style="font-size: 1.5em; color: var(--sacred-gold);">位</span>
+                        <p style="color: var(--sacred-gold); font-size: 0.8em; margin-bottom: 40px;">（息焉本堂 21 | 金家堂 10）</p>
+                        
+                        <p style="font-size: 1.2em;">主内平安归主</p>
+                        <span class="big-num" style="color: var(--ink-black); opacity: 0.4;">10</span><span style="font-size: 1.5em; color: var(--ink-black); opacity: 0.4;">位</span>
+                    </div>
+                    <div style="flex: 1; border: 1px solid var(--sacred-gold); padding: 20px;">
+                        <canvas id="ministryChart"></canvas>
+                        <p style="text-align: center; font-size: 0.6em; margin-top: 20px; color: var(--sacred-gold);">宣教兴隆 · 主佑桑梓</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Slide 3: 禧年朝圣 -->
+            <section>
+                <h2>贰 · 禧年朝圣足迹</h2>
+                <div style="font-size: 0.8em; text-align: left;">
+                    <div style="padding: 20px; border-bottom: 1px dashed var(--sacred-gold);">
+                        <strong style="color:var(--klein-blue); font-size: 1.2em;">三月 · 教区巡礼</strong>
+                        <p>160位教友巡礼南天主堂、唐镇、金家巷、张家楼、浦江天主堂。在上海乡土间寻根，感受百年信仰脉络。</p>
+                    </div>
+                    <div style="padding: 20px; border-bottom: 1px dashed var(--sacred-gold);">
+                        <strong style="color:var(--klein-blue); font-size: 1.2em;">五月 · 佘山圣母</strong>
+                        <p>175位教友齐集佘山巅峰。如同山间草木，仰望圣母圣宠。这是堂区凝聚力的神圣见证。</p>
+                    </div>
+                    <div style="padding: 20px;">
+                        <strong style="color:var(--klein-blue); font-size: 1.2em;">十月 · 跨省远行</strong>
+                        <p>30位教友远赴江西、武汉。在荆楚大地见证公教会的共融合一，拓宽信仰视野。</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Slide 4: 灵修礼仪 -->
+            <section>
+                <h2>叁 · 灵修与盛大礼仪</h2>
+                <div style="display: flex; gap: 30px;">
+                    <div style="flex: 1; background: rgba(0,47,167,0.05); padding: 30px; border-top: 5px solid var(--klein-blue);">
+                        <h3 style="color: var(--klein-blue); font-size: 1.5em;"><span class="taize-flame"></span>泰泽祈祷</h3>
+                        <p style="font-size: 0.7em; text-align: left; line-height: 1.8;">每周五晚，在宣纸般的宁静中，通过短诵与长时间的静默，陪伴青年灵魂回归基督。这是乡土宁静与西式灵修的完美共鸣。</p>
+                    </div>
+                    <div style="flex: 1; background: rgba(197,160,89,0.1); padding: 30px; border-top: 5px solid var(--sacred-gold);">
+                        <h3 style="color: var(--sacred-gold); font-size: 1.5em;">盛大弥撒</h3>
+                        <p style="font-size: 0.7em; text-align: left; line-height: 1.8;">各大瞻礼，金衣圣迹。通过严谨的公教会礼仪，结合息焉堂拜占庭式建筑底蕴，让信友在庄严中领受神恩。</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Slide 5: 社会融合 (学习交流) -->
+            <section>
+                <h2>肆 · 学习交流 · 社会融合</h2>
+                <div style="display: flex; gap: 30px; align-items: center;">
+                    <div style="flex: 1.2; text-align: left;">
+                        <p style="font-size: 1.1em; color: var(--klein-blue);">积极响应“中华民族一家亲”号召</p>
+                        <p style="font-size: 0.75em; line-height: 2;">
+                            我们深入开展统战学习与研讨，坚持宗教中国化方向。通过参与民宗部门组织的各类培训，加强堂区与社会的和谐共生，展示天主子民爱国爱教的赤诚。
+                        </p>
+                    </div>
+                    <div style="flex: 1;">
+                        <div style="border: 10px solid #fff; box-shadow: 10px 10px 20px rgba(0,0,0,0.1); width: 100%; height: 250px; background: #eee; display: flex; align-items: center; justify-content: center; color: #999;">
+                            [学习交流现场剪影]
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Slide 6: 安全管理 (消防演习) -->
+            <section>
+                <h2>伍 · 守护圣殿 · 岁岁平安</h2>
+                <div style="text-align: left; padding: 40px; border: 2px solid var(--klein-blue);">
+                    <p style="font-size: 1.2em; font-weight: bold; color: var(--klein-blue);">消防安全演习</p>
+                    <p style="font-size: 0.8em; margin-top: 20px;">
+                        针对息焉堂百年保护建筑的特殊性，我们定期举行实战消防演练。从神职人员到服务骨干，确保人人懂灭火、人人会疏散。
+                    </p>
+                    <p style="font-size: 0.7em; color: var(--sacred-gold); margin-top: 10px;">—— 守护圣所，是每一位牧者的职责。</p>
+                </div>
+            </section>
+
+            <!-- Slide 7: 结语 -->
+            <section>
+                <div class="byzantine-arch" style="border-width: 1px; border-style: dashed;">
+                    <h1 style="font-family:'Cinzel'; opacity: 0.1; font-size: 6em !important;">AMEN</h1>
+                    <div style="margin-top: -120px;">
+                        <h2 style="border:none; text-align:center; font-size: 3em !important;">愿主赐福 · 息焉常青</h2>
+                        <p style="font-size: 1.2em; letter-spacing: 5px;">二零二五年度汇报完毕</p>
+                        <div class="seal" style="font-size: 1.5em; padding: 10px 30px;">愈显主荣</div>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.3.1/reveal.min.js"></script>
+    <script>
+        Reveal.initialize({
+            center: true,
+            hash: true,
+            transition: 'fade', // 如墨迹在宣纸上淡入淡出
+            backgroundTransition: 'fade'
+        });
+
+        // 图表初始化：克莱因蓝墨色系
+        const ctx = document.getElementById('ministryChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['本年度领洗', '主内归主'],
+                datasets: [{
+                    data: [31, 10],
+                    backgroundColor: ['#002FA7', 'rgba(44, 62, 80, 0.4)'],
+                    borderColor: '#C5A059',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { display: false },
+                    x: { ticks: { color: '#002FA7', font: { family: 'Noto Serif SC', size: 16 } } }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- === 微信/社交平台分享头标签 (Meta Tags) === -->
+    <title>Kylie Lee | Gleam in the Cracks - Official Invitation</title>
+    <meta name="description" content="柯兰焰博士工作室 & 闪泥电影工作室 诚邀艺术家 Kylie Lee 参与艺术场域实验。">
+    <!-- 替换下方链接为您的 300x300 缩略图地址 -->
+    <meta property="og:title" content="Kylie Lee  | Gleam in the Cracks">
+    <meta property="og:description" content="上海美术学院柯兰焰博士艺术工作室、闪泥电影工作室 联合邀请。">
+    <meta property="og:image" content="http://www.mxle.net/static/wall3_web.jpg">
+    <meta property="og:type" content="website">
+
+    <!-- 字体库加载 -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@200;500&family=Noto+Serif+KR:wght@200;500&family=Playfair+Display:ital,wght@0,400;1,600&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --gold: #c5a059;
+            --bg: #080808;
+            --text-dim: rgba(255, 255, 255, 0.5);
+            --glass: rgba(255, 255, 255, 0.03);
+        }
+
+        body, html {
+            margin: 0; padding: 0;
+            background-color: var(--bg);
+            color: #fff;
+            font-family: 'Noto Serif SC', 'Noto Serif KR', serif;
+            scroll-behavior: smooth;
+        }
+
+        /* 隐藏的图片供微信抓取预览图 */
+        .wechat-share-img {
+            position: absolute;
+            top: -9999px;
+            left: -9999px;
+            width: 300px;
+            height: 300px;
+        }
+
+        /* 电影胶片颗粒感 */
+        .film-grain {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: url('https://www.transparenttextures.com/patterns/stardust.png');
+            opacity: 0.12;
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        /* 墙缝微光动态特效 */
+        .crack-gleam {
+            position: fixed;
+            width: 1px;
+            height: 150vh;
+            background: linear-gradient(to bottom, transparent, var(--gold), transparent);
+            left: 50%;
+            top: -25vh;
+            transform: rotate(20deg);
+            box-shadow: 0 0 30px var(--gold);
+            opacity: 0.2;
+            z-index: 1;
+            animation: lightMove 10s infinite alternate ease-in-out;
+        }
+
+        @keyframes lightMove {
+            from { left: 45%; opacity: 0.1; }
+            to { left: 55%; opacity: 0.3; }
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 100px 25px;
+            position: relative;
+            z-index: 10;
+        }
+
+        /* 顶部Logo/发起人 */
+        .header-meta {
+            text-align: center;
+            letter-spacing: 5px;
+            font-size: 0.75rem;
+            color: var(--gold);
+            margin-bottom: 50px;
+            text-transform: uppercase;
+        }
+
+        /* 主标题 */
+        .main-title {
+            text-align: center;
+            margin-bottom: 100px;
+        }
+
+        .main-title h1 {
+            font-size: 3.5rem;
+            font-weight: 200;
+            margin: 0;
+            letter-spacing: 15px;
+            text-shadow: 0 0 40px rgba(197, 160, 89, 0.3);
+        }
+
+        .main-title .sub {
+            font-family: 'Playfair Display', serif;
+            font-style: italic;
+            font-size: 1.2rem;
+            color: var(--text-dim);
+            margin-top: 15px;
+        }
+
+        /* 内容卡片 */
+        .content-card {
+            background: var(--glass);
+            padding: 60px 40px;
+            border: 1px solid rgba(197, 160, 89, 0.2);
+            backdrop-filter: blur(10px);
+            margin-bottom: 80px;
+        }
+
+        .salutation {
+            font-size: 1.8rem;
+            color: var(--gold);
+            margin-bottom: 40px;
+            border-bottom: 1px solid rgba(197, 160, 89, 0.3);
+            display: inline-block;
+        }
+
+        .text-block {
+            margin-bottom: 40px;
+            line-height: 2.2;
+            text-align: justify;
+        }
+
+        .zh { font-size: 1.05rem; margin-bottom: 15px; font-weight: 400; }
+        .en { font-family: 'Playfair Display', serif; font-size: 0.9rem; color: var(--text-dim); margin-bottom: 15px; font-style: italic; }
+        .kr { font-size: 0.9rem; color: var(--text-dim); margin-bottom: 15px; font-weight: 200; }
+
+        /* 行程安排表 */
+        .itinerary {
+            margin: 80px 0;
+        }
+
+        .itinerary-row {
+            display: grid;
+            grid-template-columns: 140px 1fr;
+            margin-bottom: 40px;
+            border-left: 1px solid var(--gold);
+            padding-left: 30px;
+        }
+
+        .time {
+            font-family: 'Playfair Display', serif;
+            color: var(--gold);
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .event-info div { margin-bottom: 5px; }
+
+        /* 地图按钮 */
+        .map-btn {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 8px 18px;
+            border: 1px solid var(--gold);
+            color: var(--gold);
+            text-decoration: none;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            transition: 0.3s;
+            background: transparent;
+        }
+
+        .map-btn:hover { background: var(--gold); color: #000; }
+
+        /* 联合发起署名 */
+        .footer-sigs {
+            margin-top: 100px;
+            display: flex;
+            justify-content: space-between;
+            border-top: 1px solid #222;
+            padding-top: 50px;
+            gap: 20px;
+        }
+
+        .studio-link {
+            text-decoration: none;
+            display: block;
+            transition: all 0.4s ease;
+            cursor: pointer;
+        }
+        
+        .studio-link:hover {
+            transform: translateY(-5px);
+            filter: brightness(1.3);
+            text-shadow: 0 0 15px rgba(197, 160, 89, 0.4);
+        }
+        .sig { flex: 1; }
+        .sig-name { color: var(--gold); font-size: 1.1rem; margin-bottom: 10px; font-weight: 500; }
+        .sig-sub { font-size: 0.75rem; color: var(--text-dim); line-height: 1.6; }
+
+        /* 响应式调整 */
+        @media (max-width: 768px) {
+            .main-title h1 { font-size: 2.2rem; letter-spacing: 5px; }
+            .itinerary-row { grid-template-columns: 1fr; gap: 10px; }
+            .footer-sigs { flex-direction: column; gap: 40px; }
+            .content-card { padding: 40px 20px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- 微信抓取用的缩略图 -->
+<!-- <img src="http://www.mxle.net/static/wall3_web.jpg" class="wechat-share-img" alt="Share Icon"> -->
+
+<div class="film-grain"></div>
+<div class="crack-gleam"></div>
+
+<div class="container">
+    
+    <div class="header-meta">
+        SHANGHAI ACADEMY OF FINE ARTS | DOCTORAL RESEARCH
+    </div>
+
+    <header class="main-title">
+        <h1>墙缝里的微光</h1>
+        <div class="sub">GLEAM IN THE CRACKS / 벽 틈 사이의 미광</div>
+    </header>
+
+    <div class="content-card">
+        <div class="salutation">尊敬的 Kylie Lee：</div>
+        
+        <div class="text-block">
+            <div class="zh">柯兰焰博士艺术工作室与闪泥电影工作室诚挚邀请您于2026年1月5日莅临上海大学延长校区。我们期待与您在废弃建筑的场域中，探讨关于记忆、身体与数字化边界的即时生成。</div>
+            <div class="en">Dr. Ke Lanyan Art Studio and Shanni Film Studio cordially invite you to Shanghai University on Jan 5, 2026. We look forward to exploring the spontaneous generation of memory, body, and digital boundaries with you within the site-specific field.</div>
+            <div class="kr">커란옌 박사 아트 스튜디오와 산니 필름 스튜디오는 2026년 1월 5일 상하이 대학교로 귀하를 정중히 초대합니다. 폐허라는 현장 속에서 기억과 신체, 그리고 디지털 경계의 즉각적인 생성을 함께 탐구할 수 있기를 기대합니다.</div>
+        </div>
+
+        <div class="itinerary">
+            <!-- Row 1 -->
+            <div class="itinerary-row">
+                <div class="time">12:00</div>
+                <div class="event-info">
+                    <div class="zh">上海大学(延长校区)北门集合与午餐交流</div>
+                    <div class="en">Meeting at North Gate & Luncheon</div>
+                    <div class="kr">연장 캠퍼스 북문 집합 및 오찬 교류</div>
+                    <a href="https://maps.apple.com/place?address=%E4%B8%AD%E5%9B%BD%E4%B8%8A%E6%B5%B7%E5%B8%82%E9%9D%99%E5%AE%89%E5%8C%BA%E5%B9%BF%E4%B8%AD%E8%B7%AF788%E5%8F%B7%E4%B8%8A%E6%B5%B7%E5%A4%A7%E5%AD%A6%E5%BB%B6%E9%95%BF%E6%A0%A1%E5%8C%BA&coordinate=31.279075,121.457497&name=%E4%B8%8A%E6%B5%B7%E5%A4%A7%E5%AD%A6%E5%BB%B6%E9%95%BF%E6%A0%A1%E5%8C%BA(%E5%8C%97%E9%97%A8)&place-id=H2710I3F80D8CF337F8&map=explore" class="map-btn">MAP / 定位跳转 / 지도보기</a>
+                </div>
+            </div>
+
+            <!-- Row 2 -->
+            <div class="itinerary-row">
+                <div class="time">13:00 - 14:30</div>
+                <div class="event-info">
+                    <div class="zh">工作室参访与深度对谈</div>
+                    <div class="en">Studio Visit & In-depth Dialogue</div>
+                    <div class="kr">스튜디오 방문 및 심층 대담</div>
+                </div>
+            </div>
+
+            <!-- Row 3 -->
+            <div class="itinerary-row">
+                <div class="time">14:30 - 16:30</div>
+                <div class="event-info">
+                    <div class="zh">场域实践：即时创作与影像记录</div>
+                    <div class="en">Site Practice: Spontaneous Creation & Documentation</div>
+                    <div class="kr">현장 실습: 즉석 창작 및 영상 기록</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 联合署名 -->
+        <div class="footer-sigs">
+            <div class="sig">
+                <a href="/s/ke" class="studio-link">
+                <div class="sig-name">柯兰焰 博士艺术工作室</div>
+                <div class="sig-sub">
+                    上海美术学院<br>
+                    Dr. Ke Lanyan Art Studio<br>
+                    커란옌 박사 아트 스튜디오
+                </div>
+                </a>
+            </div>
+
+            <div class="sig">
+                <a href="/" class="studio-link">
+                <div class="sig-name">闪泥电影工作室</div>
+                <div class="sig-sub">
+                    电影艺术研究与创作<br>
+                    Shanni Film Studio<br>
+                    산니 필름 스튜디오
+                </div>
+                </a>
+            </div>
+        </div>
+
+    </div>
+
+    <footer style="text-align: center; color: var(--text-dim); font-size: 0.7rem; letter-spacing: 2px;">
+        <p>2026.01.05 SHANGHAI · YANCHANG CAMPUS</p>
+    </footer>
+
+</div>
+
+<script>
+    // 监听鼠标移动，微光产生物理位移感
+    document.addEventListener('mousemove', (e) => {
+        const moveX = (e.clientX - window.innerWidth / 2) * 0.015;
+        document.querySelector('.crack-gleam').style.transform = `rotate(20deg) translateX(${moveX}px)`;
+    });
+    
+    // 移动端倾斜传感器（可选：增加陀螺仪效果）
+    if (window.DeviceOrientationEvent) {
+        window.addEventListener('deviceorientation', (event) => {
+            const tilt = event.gamma * 0.5;
+            document.querySelector('.crack-gleam').style.left = (50 + tilt) + '%';
+        });
+    }
+</script>
+
+</body>
+</html>

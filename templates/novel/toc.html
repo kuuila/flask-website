@@ -1,0 +1,27 @@
+
+{% extends 'layout.html' %}
+{% block content %}
+<div class="post-content">
+    <div style="border-bottom:1px solid #333; padding-bottom:20px; margin-bottom:20px; text-align:center;">
+        <h1 style="color:{{ book.cover_color }}; margin-bottom:5px;">{{ book.title }}</h1>
+        <div class="meta tech-font">作者: {{ book.author }}</div>
+        <p style="margin-top:15px; color:#ccc;">{{ book.summary }}</p>
+    </div>
+
+    <h3 class="tech-font">> 目录索引</h3>
+    <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap:10px;">
+        {% for chapter in chapters %}
+        <a href="{{ url_for('novel.reader', chapter_id=chapter.id) }}" 
+           style="background:rgba(255,255,255,0.05); padding:10px; border-radius:4px; display:flex; justify-content:space-between; transition:0.2s;"
+           onmouseover="this.style.background='rgba(255,255,255,0.1)'" 
+           onmouseout="this.style.background='rgba(255,255,255,0.05)'">
+            <span>{{ chapter.title }}</span>
+            <span style="font-size:0.7rem; opacity:0.5; align-self:center;">👁 {{ chapter.views }}</span>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+<div style="text-align:center; margin-top:20px;">
+    <a href="{{ url_for('novel.shelf') }}" class="tech-font"><< 返回书架</a>
+</div>
+{% endblock %}

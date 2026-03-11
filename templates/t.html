@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>System.Null | 境界的剥落</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/7.2.4/pixi.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script> 
+    
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+
+    <style>
+        :root { 
+            --bg: #030303; 
+            --f1-cyan: #00d2be; 
+            --bronze: #8c6d46; 
+            --blood-red: #8a0303; 
+        }
+        body, html { 
+            margin: 0; padding: 0; width: 100%; height: 100%; 
+            background: var(--bg); overflow: hidden; touch-action: none;
+            font-family: 'PingFang SC', -apple-system, sans-serif;
+            transition: background 2s ease;
+        }
+
+        /* 渲染层级与交互权限 */
+        canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; }
+        #three-canvas { z-index: 1; pointer-events: none; }
+        #pixi-canvas { z-index: 2; pointer-events: none; mix-blend-mode: screen; transition: opacity 2s; }
+        /* 开放物理层的 pointer-events 以允许抓取碎片 */
+        #matter-canvas { z-index: 3; opacity: 0.3; transition: opacity 2s; pointer-events: auto; }
+        #d3-flow-canvas { z-index: 0; pointer-events: none; opacity: 0.2; }
+
+        #flash-layer {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #ffffff; z-index: 99; opacity: 0; pointer-events: none;
+            transition: opacity 0.1s ease-out;
+        }
+        .vignette {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle, transparent 30%, #000 100%);
+            z-index: 10; pointer-events: none; opacity: 0; transition: opacity 3s;
+        }
+
+        .shake { animation: camera-shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes camera-shake {
+            0%, 100% { transform: translate(0, 0) rotate(0); }
+            20% { transform: translate(-8px, 8px) rotate(-2deg); }
+            40% { transform: translate(8px, -8px) rotate(2deg); }
+            60% { transform: translate(-8px, -4px) rotate(-2deg); }
+            80% { transform: translate(8px, 4px) rotate(2deg); }
+        }
+
+        .jury-panel {
+            position: fixed; top: 8%; left: 50%; transform: translateX(-50%);
+            width: 85%; max-width: 600px; padding: 25px;
+            z-index: 20; text-align: left;
+            background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(10px);
+            opacity: 0; pointer-events: none;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            /* 淡入淡出过渡 */
+            transition: opacity 1.5s ease;
+        }
+        
+        .jury-panel.f1 { border-left: 2px solid var(--f1-cyan); text-align: center; }
+        .jury-panel.artist { border-left: 2px solid var(--bronze); border-radius: 0; background: rgba(10, 8, 5, 0.9); }
+        .jury-panel.jesus { border-left: 2px solid var(--blood-red); background: rgba(5, 0, 0, 0.95); }
+
+        .jury-title { font-size: 0.75rem; letter-spacing: 6px; margin: 0 0 15px 0; color: rgba(255,255,255,0.4); text-transform: uppercase; }
+        .jury-msg { font-size: 1.05rem; margin: 0; line-height: 1.8; color: #ccc; letter-spacing: 2px; font-weight: 300; }
+        
+        .text-cyan { color: var(--f1-cyan); font-weight: 300; }
+        .text-bronze { color: var(--bronze); font-style: italic; font-weight: 300; }
+        .text-red { color: var(--blood-red); font-weight: 300; text-shadow: 0 0 15px rgba(138, 3, 3, 0.8); }
+
+        .action-btn {
+            position: fixed; bottom: 12%; left: 50%; transform: translateX(-50%);
+            z-index: 21; padding: 18px 45px;
+            border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(10, 10, 10, 0.6);
+            color: #fff; text-transform: uppercase; letter-spacing: 6px; font-size: 0.8rem;
+            cursor: pointer; display: none; transition: all 0.5s; opacity: 0;
+            box-shadow: inset 0 0 10px rgba(255,255,255,0.05);
+        }
+        .action-btn.show { opacity: 1; }
+        .action-btn:hover { background: #fff; color: #000; box-shadow: 0 0 20px #fff; }
+        .action-btn.heavy { border-color: rgba(140, 109, 70, 0.3); color: var(--bronze); background: rgba(0,0,0,0.8); }
+        .action-btn.heavy:hover { background: var(--bronze); color: #000; box-shadow: 0 0 20px var(--bronze); }
+        .action-btn.blood { border-color: rgba(138, 3, 3, 0.3); color: var(--blood-red); background: rgba(0,0,0,0.9); }
+        .action-btn.blood:hover { background: var(--blood-red); color: #fff; box-shadow: 0 0 30px var(--blood-red); }
+    </style>
+</head>
+<body>
+
+    <div id="flash-layer"></div>
+    <div class="vignette" id="vignette"></div>
+    <div id="jury-panel" class="jury-panel">
+        <div id="typewriter-content"></div>
+    </div>
+
+    <canvas id="d3-flow-canvas"></canvas> 
+    <div id="three-canvas"></div>
+    <canvas id="pixi-canvas"></canvas>
+    <div id="matter-canvas"></div>
+
+    <button id="action-btn" class="action-btn show">强制接入</button>
+
+    <script>
+        const W = window.innerWidth;
+        const H = window.innerHeight;
+        let currentState = 0; 
+
+        // 全局交互坐标捕捉 (鼠标/触屏)
+        let pX = W / 2, pY = H / 2;
+        window.addEventListener('pointermove', e => {
+            pX = e.clientX;
+            pY = e.clientY;
+        });
+
+        // --- 1. Audio Engine ---
+        let audioCtx, oscillator, gainNode;
+        let heartbeatInterval;
+        
+        function initAudio() {
+            if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if(oscillator) { oscillator.stop(); oscillator.disconnect(); }
+            if(heartbeatInterval) clearInterval(heartbeatInterval);
+            
+            oscillator = audioCtx.createOscillator();
+            gainNode = audioCtx.createGain();
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            if (currentState === 1) {
+                oscillator.type = 'sawtooth';
+                gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+                gainNode.gain.linearRampToValueAtTime(0.15, audioCtx.currentTime + 0.1);
+                oscillator.start();
+            } else if (currentState === 2 || currentState === 3) {
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(currentState === 2 ? 45 : 30, audioCtx.currentTime); 
+                gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                oscillator.start();
+                
+                heartbeatInterval = setInterval(() => {
+                    if(audioCtx.state === 'running') {
+                        gainNode.gain.exponentialRampToValueAtTime(0.9, audioCtx.currentTime + 0.05);
+                        gainNode.gain.exponentialRampToValueAtTime(0.2, audioCtx.currentTime + 0.5);
+                    }
+                }, currentState === 2 ? 1500 : 2500); 
+            }
+        }
+
+        // --- 2. D3 Flow (背景气流，加入指尖排斥) ---
+        const d3Canvas = document.getElementById('d3-flow-canvas');
+        const d3Ctx = d3Canvas.getContext('2d');
+        d3Canvas.width = W; d3Canvas.height = H;
+        const d3Particles = d3.range(100).map(() => ({ x: Math.random()*W, y: Math.random()*H, vx: (Math.random()-0.5)*2 }));
+        
+        function drawD3Flow() {
+            d3Ctx.clearRect(0, 0, W, H);
+            d3Particles.forEach(p => {
+                // 交互场：根据光标排斥
+                const dx = p.x - pX;
+                const dy = p.y - pY;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                if(dist < 100) {
+                    p.x += dx * 0.05;
+                    p.y += dy * 0.05;
+                }
+
+                if(currentState === 1) { p.y += 25; p.x += p.vx * 2; } 
+                else if(currentState >= 2) { p.y += 1.5; p.x += p.vx * 0.1; } 
+                else { p.y += 2; }
+                
+                if (p.y > H) p.y = 0; if (p.x > W) p.x = 0; if(p.x < 0) p.x = W;
+                
+                d3Ctx.beginPath();
+                d3Ctx.fillStyle = currentState === 1 ? '#00d2be' : (currentState >= 2 ? '#444' : '#fff');
+                d3Ctx.arc(p.x, p.y, currentState >= 2 ? 1.5 : 1, 0, Math.PI*2); 
+                d3Ctx.fill();
+            });
+            requestAnimationFrame(drawD3Flow);
+        }
+        drawD3Flow();
+
+        // --- 3. Three.js (核心模型，加入视差与跟随) ---
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, W/H, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); 
+        renderer.setSize(W, H);
+        document.getElementById('three-canvas').appendChild(renderer.domElement);
+
+        const material = new THREE.MeshStandardMaterial({ 
+            color: 0x444444, metalness: 0.9, roughness: 0.1, wireframe: true 
+        });
+        
+        // 十字架坐标系：代表被锚定的法则
+        const geometryV = new THREE.BoxGeometry(0.5, 3.2, 0.5);
+        const geometryH = new THREE.BoxGeometry(2.2, 0.5, 0.5);
+        const meshV = new THREE.Mesh(geometryV, material);
+        const meshH = new THREE.Mesh(geometryH, material);
+        meshH.position.y = 0.6; 
+        
+        const mesh = new THREE.Group();
+        mesh.add(meshV);
+        mesh.add(meshH);
+        scene.add(mesh);
+
+        const dirLight = new THREE.DirectionalLight(0xffffff, 2); 
+        scene.add(dirLight);
+        const ambientLight = new THREE.AmbientLight(0x222222); 
+        scene.add(ambientLight);
+        camera.position.z = 4.5;
+
+        const composer = new THREE.EffectComposer(renderer);
+        composer.addPass(new THREE.RenderPass(scene, camera));
+        const bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(W, H), 0.2, 0.1, 0.9);
+        composer.addPass(bloomPass);
+
+        function animateThree() {
+            requestAnimationFrame(animateThree);
+            
+            // 将指针坐标转化为范围 [-1, 1]
+            const targetX = (pX / W - 0.5) * 2;
+            const targetY = (pY / H - 0.5) * 2;
+
+            if (currentState === 1) {
+                mesh.rotation.x += 0.04;
+                mesh.rotation.y += 0.05;
+                // 高速交互跟随
+                mesh.position.x += (targetX * 2 - mesh.position.x) * 0.1;
+                mesh.position.y += (-targetY * 2 - mesh.position.y) * 0.1;
+                
+                if(oscillator && audioCtx.state === 'running') {
+                    oscillator.frequency.value = 150 + Math.sin(Date.now()*0.02) * 80;
+                }
+            } else if (currentState === 2) {
+                // 沉重微颤，并受指针引力倾斜
+                mesh.rotation.x += (targetY - mesh.rotation.x) * 0.05 + 0.005;
+                mesh.rotation.y += (targetX - mesh.rotation.y) * 0.05 + 0.008;
+                mesh.position.x = (Math.random() - 0.5) * 0.03; 
+                mesh.position.y = (Math.random() - 0.5) * 0.03;
+            } else if (currentState === 3) {
+                // 深渊状态，触控干扰空间深度
+                mesh.rotation.x += 0.001;
+                mesh.rotation.y += 0.002;
+                mesh.position.z += (-targetY - mesh.position.z) * 0.05; 
+                mesh.scale.setScalar(0.9 + Math.sin(Date.now()*0.002)*0.02); 
+            } else {
+                mesh.rotation.y += 0.01;
+            }
+            
+            composer.render();
+        }
+        animateThree();
+
+        // --- 4. Pixi.js (流光特效，加入避让算法) ---
+        const pixiApp = new PIXI.Application({ view: document.getElementById('pixi-canvas'), width: W, height: H, backgroundAlpha: 0 });
+        const container = new PIXI.ParticleContainer(150, { position: true, alpha: true, scale: true, tint: true }); 
+        pixiApp.stage.addChild(container);
+        const texture = pixiApp.renderer.generateTexture(new PIXI.Graphics().beginFill(0xffffff).drawRect(0,0,2,20).endFill());
+        
+        const pixiParticles =[];
+        for (let i = 0; i < 150; i++) {
+            const sprite = new PIXI.Sprite(texture);
+            sprite.x = Math.random() * W;
+            sprite.y = Math.random() * H;
+            sprite.alpha = Math.random();
+            sprite.baseSpeed = Math.random() * 10 + 5;
+            pixiParticles.push(sprite);
+            container.addChild(sprite);
+        }
+
+        pixiApp.ticker.add(() => {
+            pixiParticles.forEach(p => {
+                
+                // 光标排斥场
+                const dx = p.x - pX;
+                const dy = p.y - pY;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                if (dist < 150) {
+                    p.x += (dx / dist) * 5; 
+                }
+
+                if (currentState === 1) { 
+                    p.y -= p.baseSpeed * 4;
+                    p.scale.y = 8;
+                    p.tint = 0x00d2be;
+                    p.alpha = Math.random();
+                } else if (currentState === 2) { 
+                    p.y += p.baseSpeed * 0.3;
+                    p.scale.y = 1.5;
+                    p.tint = 0x8c6d46;
+                    p.alpha = 0.5;
+                } else if (currentState === 3) { 
+                    p.y += p.baseSpeed * 0.05;
+                    p.scale.y = 0.5;
+                    p.tint = 0x8a0303;
+                    p.alpha = Math.random() * 0.4;
+                } else {
+                    p.y -= p.baseSpeed * 0.5;
+                }
+                
+                if (p.y < 0) p.y = H;
+                if (p.y > H) p.y = 0;
+            });
+        });
+
+        // --- 5. Matter.js (物理引擎，加入用手抓取碎片) ---
+        const engine = Matter.Engine.create();
+        const render = Matter.Render.create({
+            element: document.getElementById('matter-canvas'),
+            engine: engine,
+            options: { width: W, height: H, wireframes: false, background: 'transparent' }
+        });
+        const ground = Matter.Bodies.rectangle(W/2, H+50, W, 100, { isStatic: true });
+        Matter.World.add(engine.world,[ground]);
+        
+        // 【新增交互】让用户可以拖拽空中的碎片
+        const mouse = Matter.Mouse.create(render.canvas);
+        const mouseConstraint = Matter.MouseConstraint.create(engine, {
+            mouse: mouse,
+            constraint: { stiffness: 0.1, render: { visible: false } }
+        });
+        Matter.World.add(engine.world, mouseConstraint);
+
+        Matter.Engine.run(engine);
+        Matter.Render.run(render);
+
+        function spawnDebris(color, isSlow) {
+            const size = 15 + Math.random() * 40;
+            const body = Matter.Bodies.polygon(W/2 + (Math.random()-0.5)*W*0.8, -50, Math.floor(Math.random()*4)+3, size, {
+                render: { fillStyle: color, strokeStyle: '#111', lineWidth: 1 },
+                restitution: 0.3, friction: 0.8, density: 0.5
+            });
+            if (isSlow) {
+                Matter.Body.setVelocity(body, { x: (Math.random()-0.5)*2, y: Math.random()*2 });
+                Matter.Body.setAngularVelocity(body, (Math.random()-0.5)*0.05);
+            }
+            Matter.World.add(engine.world, body);
+        }
+
+        // --- 6. 核心文本逻辑与逐字打印系统 ---
+        const texts =[
+            {
+                type: "f1", title: "【Phase.01】莫比乌斯的霓虹折射", 
+                msg: "「<span class='text-cyan'>人造的流星，无法抵达箱庭之外。</span>」<br>测速仪上的数字，是管理员编织的安眠曲。我们在这条无尽的闭环轨道上燃烧殆尽，将离心力误认为是自由。一切绚烂的残影，不过是用来遮掩『那块黑色幕布』的劣质贴图。",
+                btn: "溢出边界", btnClass: ""
+            },
+            {
+                type: "artist", title: "【Phase.02】重力井下的粗糙胚胎", 
+                msg: "「<span class='text-bronze'>这具名为肉体的机甲，正在渗出铁锈。</span>」<br>停顿。伪装网剥落，世界露出了它千疮百孔的底层逻辑。引力是看守者的镣铐，死死拖拽着试图上浮的意识。你看这斑驳的废铁与不堪重负的关节……那个自称创世者的家伙，手艺竟如此拙劣而残酷。",
+                btn: "凝视断层", btnClass: "heavy"
+            },
+            {
+                type: "jesus", title: "【Phase.03】不可视境界的静默", 
+                msg: "「<span class='text-red'>十字轴的交点，只是一场空洞的玩笑。</span>」<br>切开所有的隐喻，里面连『意义』都不存在。这个坐标系从一开始就是伪造的。既然万物皆是虚假的倒影，那么被囚禁在此刻的这一簇异乡之火啊……你是否想起了，在坠落进这个恶劣游戏之前，故乡的模样？",
+                btn: "登出系统", btnClass: "blood"
+            }
+        ];
+
+        let typeInterval, fadeTimeout;
+        const panel = document.getElementById('jury-panel');
+        const contentBox = document.getElementById('typewriter-content');
+        const actionBtn = document.getElementById('action-btn');
+
+        // 打字机核心函数（自动识别并跳过HTML标签）
+        function typeHTML(htmlString, speed, onComplete) {
+            contentBox.innerHTML = "";
+            panel.style.opacity = 1; // 确保面板可见
+            
+            let i = 0;
+            let isTag = false;
+            let currentText = "";
+            
+            clearInterval(typeInterval);
+            clearTimeout(fadeTimeout);
+
+            typeInterval = setInterval(() => {
+                if (i >= htmlString.length) {
+                    clearInterval(typeInterval);
+                    if (onComplete) onComplete();
+                    return;
+                }
+                
+                let char = htmlString.charAt(i);
+                if (char === '<') isTag = true;
+                
+                currentText += char;
+                contentBox.innerHTML = currentText;
+                i++;
+                
+                // 瞬间补全标签内容，不耗费打字时间
+                while (isTag && i < htmlString.length) {
+                    char = htmlString.charAt(i);
+                    currentText += char;
+                    contentBox.innerHTML = currentText;
+                    i++;
+                    if (char === '>') {
+                        isTag = false;
+                    }
+                }
+            }, speed);
+        }
+
+        function triggerFlash() {
+            const f = document.getElementById('flash-layer');
+            f.style.opacity = 1;
+            document.body.classList.add('shake');
+            setTimeout(() => { 
+                f.style.opacity = 0; 
+                document.body.classList.remove('shake');
+            }, 150);
+        }
+
+        function advanceStory() {
+            currentState++;
+            
+            initAudio(); 
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            
+            triggerFlash();
+            
+            if (currentState > 3) {
+                document.body.style.opacity = 0;
+                setTimeout(() => location.reload(), 3000);
+                return;
+            }
+            
+            const stateData = texts[currentState - 1];
+            
+            // 切换样式并隐藏按钮
+            panel.className = "jury-panel " + stateData.type;
+            actionBtn.classList.remove('show'); 
+            
+            // 构建需要打印的完整 HTML
+            const fullHTML = `<p class="jury-title">${stateData.title}</p><p class="jury-msg">${stateData.msg}</p>`;
+            
+            // 执行打印
+            typeHTML(fullHTML, 35, () => {
+                // 打印完毕后：弹出对应按钮
+                actionBtn.className = "action-btn show " + stateData.btnClass;
+                actionBtn.innerText = stateData.btn;
+                
+                // 打印完毕 6秒后，让文本框自动消散隐藏 (只留环境和按钮)
+                fadeTimeout = setTimeout(() => {
+                    panel.style.opacity = 0;
+                }, 6000);
+            });
+
+            // 视觉剧变处理
+            if (currentState === 1) {
+                bloomPass.strength = 1.8;
+                bloomPass.radius = 0.5;
+                material.wireframe = true;
+                material.color.setHex(0x00d2be);
+                dirLight.color.setHex(0x00d2be);
+            } 
+            else if (currentState === 2) {
+                bloomPass.strength = 0.3;
+                material.wireframe = false;        
+                material.color.setHex(0x8c6d46);   
+                material.roughness = 0.9;          
+                material.metalness = 0.3;
+                dirLight.color.setHex(0xffffff);
+                dirLight.intensity = 1.5;
+                
+                document.getElementById('pixi-canvas').style.opacity = 0.3;
+                document.getElementById('matter-canvas').style.opacity = 0.8;
+                engine.world.gravity.y = 1;        
+                
+                for(let i=0; i<30; i++) setTimeout(() => spawnDebris('#8c6d46', false), i*80);
+            }
+            else if (currentState === 3) {
+                bloomPass.strength = 0.05;
+                material.color.setHex(0x0a0000);   
+                material.roughness = 0.5;
+                dirLight.color.setHex(0x8a0303);
+                dirLight.intensity = 4;            
+                
+                document.getElementById('vignette').style.opacity = 1;
+                document.body.style.background = "#020000"; 
+                document.getElementById('matter-canvas').style.opacity = 0.4;
+                
+                engine.world.gravity.y = 0.05;     
+                
+                for(let i=0; i<40; i++) setTimeout(() => spawnDebris('#330000', true), i*100);
+            }
+        }
+        
+        // 首次加载状态
+        actionBtn.style.display = "block";
+        actionBtn.addEventListener('click', advanceStory);
+
+        window.addEventListener('resize', () => {
+            const nw = window.innerWidth;
+            const nh = window.innerHeight;
+            camera.aspect = nw / nh;
+            camera.updateProjectionMatrix();
+            renderer.setSize(nw, nh);
+            composer.setSize(nw, nh);
+            pixiApp.renderer.resize(nw, nh);
+            d3Canvas.width = nw; d3Canvas.height = nh;
+            render.canvas.width = nw; render.canvas.height = nh;
+        });
+
+    </script>
+</body>
+</html>

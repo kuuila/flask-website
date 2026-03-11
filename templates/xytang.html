@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>息焉堂：城市绿洲复兴计划</title>
+    <style>
+        /* --- 全局重置与基础样式 --- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Songti SC", "SimSun", "Times New Roman", serif; /*以此衬线体体现人文感*/
+            background-color: #1a1a1a;
+            color: #f0f0f0;
+            overflow: hidden; /* 防止橡皮筋效果 */
+        }
+
+        /* --- 容器：实现整屏滚动吸附效果 --- */
+        .h5-container {
+            height: 100vh;
+            width: 100vw;
+            overflow-y: scroll;
+            scroll-snap-type: y mandatory;
+            scroll-behavior: smooth;
+        }
+
+        /* --- 通用部分样式 --- */
+        section {
+            height: 100vh;
+            width: 100vw;
+            scroll-snap-align: start;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 2rem;
+            background-size: cover;
+            background-position: center;
+            overflow: hidden;
+        }
+
+        /* 遮罩层，让文字更清晰 */
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            z-index: 1;
+        }
+
+        .content {
+            position: relative;
+            z-index: 2;
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 1s ease-out;
+            max-width: 600px;
+        }
+
+        /* 动画激活态 */
+        section.active .content {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            color: #d4af37; /* 香槟金 */
+            letter-spacing: 2px;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        }
+
+        h2 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: #d4af37;
+            font-weight: normal;
+            border-bottom: 1px solid rgba(212, 175, 55, 0.5);
+            display: inline-block;
+            padding-bottom: 10px;
+        }
+
+        p {
+            font-size: 1rem;
+            line-height: 1.8;
+            margin-bottom: 1.5rem;
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 300;
+        }
+
+        .highlight {
+            color: #d4af37;
+            font-weight: bold;
+        }
+
+        /* --- 底部指示箭头 --- */
+        .arrow-down {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 20px;
+            height: 20px;
+            border-bottom: 2px solid #fff;
+            border-right: 2px solid #fff;
+            transform: rotate(45deg);
+            animation: arrowAnim 2s infinite;
+            z-index: 3;
+            opacity: 0.7;
+        }
+
+        @keyframes arrowAnim {
+            0% { transform: translate(-50%, 0) rotate(45deg); opacity: 0; }
+            50% { opacity: 1; }
+            100% { transform: translate(-50%, 15px) rotate(45deg); opacity: 0; }
+        }
+
+        /* --- 各页面特定样式 (模拟背景图) --- */
+        
+        /* 第一页：封面 - 模拟拜占庭穹顶的光影 */
+        #page1 {
+            background: radial-gradient(circle at center, #2c3e50 0%, #000000 100%);
+        }
+        #page1 .dome-graphic {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: conic-gradient(from 0deg, #d4af37, #1a1a1a, #d4af37, #1a1a1a, #d4af37);
+            margin-bottom: 2rem;
+            box-shadow: 0 0 50px rgba(212, 175, 55, 0.3);
+            opacity: 0.8;
+        }
+
+        /* 第二页：拆墙透绿 - 绿色渐变 */
+        #page2 {
+            background: linear-gradient(to bottom, #1a2a1a, #0d1a0d);
+        }
+        .card-img {
+            width: 100%;
+            height: 200px;
+            background: #2d4030;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            color: #8fbc8f;
+            border: 1px solid #8fbc8f;
+        }
+
+        /* 第三页：倾听避难所 - 暖灰色 */
+        #page3 {
+            background: linear-gradient(to top, #2c3e50, #4b6cb7);
+        }
+
+        /* 第四页：烛光音乐会 - 暖光 */
+        #page4 {
+            background: radial-gradient(circle at bottom, #594025, #1a1a1a);
+        }
+        
+        /* 交互按钮 */
+        .btn-candle {
+            background: transparent;
+            border: 1px solid #d4af37;
+            color: #d4af37;
+            padding: 12px 30px;
+            font-size: 1rem;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: inherit;
+            margin-top: 1rem;
+        }
+
+        .btn-candle.lit {
+            background: #d4af37;
+            color: #000;
+            box-shadow: 0 0 30px #d4af37;
+            border-color: #d4af37;
+        }
+
+        /* 第五页：结语 */
+        #page5 {
+            background: #000;
+        }
+        .logo-footer {
+            font-size: 0.8rem;
+            opacity: 0.5;
+            margin-top: 2rem;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="h5-container" id="container">
+        
+        <!-- Page 1: 封面 -->
+        <section id="page1" class="active">
+            <div class="overlay"></div>
+            <div class="content">
+                <div class="dome-graphic"></div>
+                <p style="letter-spacing: 5px; opacity: 0.8; font-size: 0.9rem;">上海 · 邬达克经典 · 城市更新</p>
+                <h1>息焉 · 归途</h1>
+                <p style="font-style: italic;">"The Urban Oasis Project"</p>
+                <div style="width: 50px; height: 1px; background: #d4af37; margin: 20px auto;"></div>
+                <p>为焦虑的城市，<br>寻找灵魂的安息处。</p>
+            </div>
+            <div class="arrow-down"></div>
+        </section>
+
+        <!-- Page 2: 物理空间改造 -->
+        <section id="page2">
+            <div class="overlay"></div>
+            <div class="content">
+                <h2>01. 拆墙透绿</h2>
+                <p class="subtitle">Architectural Intervention</p>
+                <div class="card-img-1">
+                    <img class="card-img" src="/static/xytang.jpg" />
+                </div>
+                <p>
+                    推倒冰冷的围墙，<br>
+                    让<span class="highlight">拜占庭穹顶</span>的光辉透街而出。<br>
+                    不再是禁地，<br>
+                    而是每位路人触手可及的客西马尼园。
+                </p>
+            </div>
+            <div class="arrow-down"></div>
+        </section>
+
+        <!-- Page 3: 功能植入 -->
+        <section id="page3">
+            <div class="overlay"></div>
+            <div class="content">
+                <h2>02. 倾听避难所</h2>
+                <p class="subtitle">The Listening Shelter</p>
+                <p>
+                    设立<b>“邬达克·神恩书房”</b>与<b>“静默室”</b>。<br>
+                    这里不售卖咖啡，只提供免费的热茶与倾听。
+                </p>
+                <p>
+                    无论是外卖员还是金融家，<br>
+                    在此刻，都只是被接纳的灵魂。
+                </p>
+            </div>
+            <div class="arrow-down"></div>
+        </section>
+
+        <!-- Page 4: 精神连接 -->
+        <section id="page4">
+            <div class="overlay"></div>
+            <div class="content">
+                <h2>03. 烛光音乐会</h2>
+                <p class="subtitle">Spiritual Connectivity</p>
+                <p>
+                    每周五晚，无扩音巴赫大提琴独奏。<br>
+                    当钟声与琴声共鸣，<br>
+                    这是上海专属的<b>“安息日”</b>时刻。
+                </p>
+                <button class="btn-candle" id="lightBtn" onclick="lightCandle(this)">
+                    点亮心灯 (Light Up)
+                </button>
+                <p id="candleText" style="font-size: 0.8rem; margin-top: 10px; opacity: 0; transition: opacity 1s;">
+                    愿平安归于你。
+                </p>
+            </div>
+            <div class="arrow-down"></div>
+        </section>
+
+        <!-- Page 5: 结语 -->
+        <section id="page5">
+            <div class="overlay"></div>
+            <div class="content">
+                <h1>息焉堂</h1>
+                <p style="font-size: 1.2rem; color: #d4af37;">Church of the Assumption</p>
+                <br>
+                <p>
+                    在这里，城市获得呼吸。<br>
+                    在这里，灵魂找到归宿。
+                </p>
+                <br>
+                <a href="#" style="color: #fff; text-decoration: none; border-bottom: 1px solid #fff; padding-bottom: 3px;">成为志愿者 / Volunteer</a>
+                
+                <div class="logo-footer">
+                    SHANGHAI DIVINE GRACE REVIVAL PLAN<br>
+                    2025 © Urbanist Vision
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <script>
+        // 简单的滚动监听，用于触发进场动画
+        const sections = document.querySelectorAll('section');
+        const container = document.getElementById('container');
+
+        const observerOptions = {
+            root: container,
+            threshold: 0.5
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('active');
+                } else {
+                    // 可选：如果希望滑出去后重置动画，取消注释下面这行
+                    // entry.target.classList.remove('active');
+                }
+            });
+        }, observerOptions);
+
+        sections.forEach(section => {
+            observer.observe(section);
+        });
+
+        // 点亮蜡烛的交互逻辑
+        function lightCandle(btn) {
+            if(!btn.classList.contains('lit')) {
+                btn.classList.add('lit');
+                btn.innerText = "已点亮 (Lit)";
+                document.getElementById('candleText').style.opacity = '1';
+                
+                // 让背景稍微亮一点，模拟烛光
+                document.getElementById('page4').style.background = 'radial-gradient(circle at bottom, #8a6230, #1a1a1a)';
+            }
+        }
+    </script>
+</body>
+</html>

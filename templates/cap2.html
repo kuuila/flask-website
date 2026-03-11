@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>拜占庭帽神：癫狂版</title>
+    <style>
+        :root {
+            --yellow: #F7D51D;
+            --red: #E74C3C;
+            --purple: #8E44AD;
+            --black: #2C3E50;
+            --white: #ECF0F1;
+            --border: 4px solid #000;
+        }
+
+        body {
+            margin: 0;
+            background: #333;
+            font-family: 'Microsoft YaHei', 'Comic Sans MS', sans-serif;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            user-select: none;
+            touch-action: manipulation;
+        }
+
+        /* 动态背景 - 漫画集中线 */
+        .comic-bg {
+            position: absolute;
+            width: 100%; height: 100%;
+            background: repeating-conic-gradient(
+                from 0deg, 
+                #333 0deg 10deg, 
+                #2a2a2a 10deg 20deg
+            );
+            z-index: -1;
+            opacity: 1;
+        }
+
+        /* 顶部跑马灯 */
+        .marquee-container {
+            background: var(--yellow);
+            color: #000;
+            border-bottom: var(--border);
+            height: 30px;
+            overflow: hidden;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            font-weight: 900;
+            font-size: 14px;
+            z-index: 20;
+        }
+        .marquee-text {
+            display: inline-block;
+            padding-left: 100%;
+            animation: marquee 15s linear infinite;
+        }
+
+        /* HUD */
+        header {
+            background: #fff;
+            padding: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: var(--border);
+            box-shadow: 0 5px 0 rgba(0,0,0,0.2);
+            z-index: 10;
+        }
+        .hud-item { font-weight: 900; font-size: 18px; }
+        .hud-score { color: var(--purple); font-size: 24px; }
+        .life-heart { color: var(--red); }
+
+        /* 时间条 */
+        #time-bar-wrapper { width: 100%; height: 12px; background: #000; }
+        #time-bar { width: 100%; height: 100%; background: #2ECC71; transition: width 0.1s linear; }
+
+        /* 游戏主区 */
+        #game-area {
+            flex: 1;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        /* 角色卡片 */
+        .card {
+            width: 300px; height: 440px;
+            background: #fff;
+            border: var(--border);
+            border-radius: 20px;
+            box-shadow: 10px 10px 0 rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        
+        .card-header {
+            width: 100%; height: 50px;
+            background: var(--purple);
+            border-radius: 16px 16px 0 0;
+            border-bottom: var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .emoji-box {
+            font-size: 120px;
+            margin: 20px 0;
+            filter: drop-shadow(5px 5px 0 rgba(0,0,0,0.2));
+            z-index: 2;
+        }
+
+        .info-box {
+            text-align: center;
+            padding: 0 20px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        
+        .role-name { font-size: 26px; font-weight: 900; margin-bottom: 5px; color: #333; }
+        .role-desc { font-size: 14px; color: #666; font-style: italic; min-height: 40px; margin-bottom: 10px;}
+        .hat-tag { 
+            background: var(--yellow); border: 2px solid #000; 
+            padding: 5px 15px; border-radius: 20px; 
+            font-weight: bold; display: inline-block;
+            box-shadow: 3px 3px 0 rgba(0,0,0,0.1);
+        }
+
+        /* 错误反馈特效 */
+        .feedback-overlay {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%) rotate(-15deg);
+            font-size: 80px;
+            font-weight: 900;
+            color: var(--red);
+            text-shadow: 4px 4px 0 #000;
+            pointer-events: none;
+            opacity: 0;
+            z-index: 50;
+            white-space: nowrap;
+        }
+
+        /* 按钮区 */
+        .controls {
+            height: 100px;
+            display: flex;
+            background: #fff;
+            border-top: var(--border);
+        }
+        .btn {
+            flex: 1; border: none; font-size: 24px; font-weight: 900;
+            cursor: pointer; transition: 0.1s;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .btn-keep { background: #eaffea; color: #27ae60; border-right: var(--border); }
+        .btn-keep:active { background: #d5f5d5; transform: translateY(2px); }
+        .btn-remove { background: #ffeaea; color: #c0392b; }
+        .btn-remove:active { background: #fadbd8; transform: translateY(2px); }
+
+        /* 结算界面 */
+        .screen-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.92);
+            z-index: 100;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            color: #fff;
+            padding: 20px;
+            box-sizing: border-box;
+            backdrop-filter: blur(5px);
+        }
+        .hidden { display: none !important; }
+
+        .end-card {
+            background: #fff; color: #333;
+            width: 100%; max-width: 360px;
+            border: var(--border); border-radius: 15px;
+            padding: 20px; box-shadow: 10px 10px 0 var(--yellow);
+            text-align: center;
+            animation: popIn 0.5s;
+        }
+        .end-title { font-size: 28px; color: var(--purple); font-weight: 900; margin: 10px 0; }
+        .end-desc { font-size: 15px; text-align: left; background: #f9f9f9; padding: 10px; border-radius: 5px; margin-bottom: 15px; line-height: 1.5; border: 1px dashed #ccc;}
+        .lb-row { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #eee; font-size: 14px;}
+        
+        .start-btn {
+            background: var(--yellow); border: var(--border);
+            font-size: 22px; font-weight: 900; padding: 15px 40px;
+            cursor: pointer; box-shadow: 5px 5px 0 #fff; margin-top: 20px;
+        }
+        .start-btn:active { box-shadow: 2px 2px 0 #fff; transform: translate(3px, 3px); }
+
+        /* 动画定义 */
+        @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
+        @keyframes popIn { 0% { transform: scale(0.5); opacity:0; } 80% { transform: scale(1.05); opacity:1; } 100% { transform: scale(1); } }
+        @keyframes slam { 0% { transform: translate(-50%, -50%) scale(2); opacity: 0; } 50% { transform: translate(-50%, -50%) scale(1); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(1.2); opacity: 0; } }
+
+    </style>
+</head>
+<body>
+
+    <!-- 跑马灯标语 -->
+    <div class="marquee-container">
+        <div class="marquee-text">
+            🎩 欢迎来到圣三一脱帽检查站！  🔥 提示：上帝看内心，但大妈看发型！  ⚠️ 警告：教皇的帽子比你的命还贵，别乱碰！  🧢 棒球帽在教堂属于一级违禁品！  👰 新娘的头纱不是浴巾，请勿摘除！  💈 光头是检验虔诚的唯一标准（大妈语）！
+        </div>
+    </div>
+
+    <!-- 首页 -->
+    <div id="start-screen" class="screen-overlay">
+        <h1 style="font-size:40px; color:var(--yellow); text-shadow:4px 4px 0 #000; margin-bottom:0;">🎩 拜占庭帽神</h1>
+        <h2 style="color:#ccc; margin-top:5px; font-style:italic;">癫狂PK版</h2>
+        <div style="background:#fff; color:#000; padding:15px; border:4px solid var(--yellow); border-radius:10px; max-width:300px; text-align:left; margin:20px 0;">
+            <b>规则：</b><br>
+            1. 👨 男人/普通人 -> <span style="color:var(--red)">摘帽 (Remove)</span><br>
+            2. 👩 女士/神职/特殊 -> <span style="color:var(--purple)">保留 (Keep)</span><br>
+            3. 速度越快，得分越高！<br>
+            4. 别信那些奇奇怪怪的形容词！
+        </div>
+        <button class="start-btn" onclick="game.start()">开始执勤</button>
+    </div>
+
+    <!-- 结算页 -->
+    <div id="end-screen" class="screen-overlay hidden">
+        <div class="end-card">
+            <div id="end-emoji" style="font-size:60px;">🤡</div>
+            <div id="end-title" class="end-title">头皮收割者</div>
+            <div id="end-desc" class="end-desc">
+                文案加载中...
+            </div>
+            
+            <div style="background:#333; color:#fff; padding:5px; font-weight:bold; border-radius:5px 5px 0 0;">📊 本次得分: <span id="final-score" style="color:var(--yellow)">0</span></div>
+            <div style="border:2px solid #333; border-top:none; padding:10px; border-radius: 0 0 5px 5px;">
+                <div style="font-size:12px; color:#999; margin-bottom:5px;">🏆 本地排行榜</div>
+                <div id="lb-content"></div>
+            </div>
+
+            <button class="start-btn" style="width:100%; margin-top:15px; font-size:18px; padding:10px;" onclick="game.start()">再试一次</button>
+        </div>
+    </div>
+
+    <header>
+        <div class="hud-item"><span class="life-heart">❤️❤️❤️</span> <span id="lives-text">3</span></div>
+        <div class="hud-item hud-score" id="score">0</div>
+    </header>
+    <div id="time-bar-wrapper"><div id="time-bar"></div></div>
+
+    <div id="game-area">
+        <div id="feedback-text" class="feedback-overlay">蠢货!</div>
+        <div id="card-wrapper"></div>
+    </div>
+
+    <div class="controls">
+        <button class="btn btn-keep" onclick="game.input(true)">
+            ⭕ 准许戴帽
+            <span style="font-size:12px; font-weight:normal; opacity:0.7">Keep Hat</span>
+        </button>
+        <button class="btn btn-remove" onclick="game.input(false)">
+            ❌ 勒令摘除
+            <span style="font-size:12px; font-weight:normal; opacity:0.7">Remove Hat</span>
+        </button>
+    </div>
+
+<script>
+    /* ================= 核心数据库 ================= */
+    
+    // tags: man(男/俗/必摘), woman(女/必留), clergy(神职/必留), vip(权贵/必留), absurd(荒谬/必留)
+    const roles = [
+        { name: "牛仔", tag: "man", hat: "Stetson", emoji: "🤠" },
+        { name: "交警", tag: "man", hat: "警帽", emoji: "👮" },
+        { name: "Rapper", tag: "man", hat: "棒球帽", emoji: "🧢" },
+        { name: "大厨", tag: "man", hat: "高筒帽", emoji: "👨‍🍳" },
+        { name: "魔术师", tag: "man", hat: "高礼帽", emoji: "🎩" },
+        { name: "游客", tag: "man", hat: "遮阳帽", emoji: "👒" }, // 陷阱：男人戴遮阳帽也要摘
+        { name: "外卖员", tag: "man", hat: "头盔", emoji: "🛵" },
+        { name: "建筑工", tag: "man", hat: "安全帽", emoji: "👷" },
+        { name: "圣诞老人", tag: "man", hat: "红绒帽", emoji: "🎅" }, // 虽然是圣人，但按习俗男士进堂脱帽
+        
+        { name: "修女", tag: "clergy", hat: "头巾", emoji: "🧕" },
+        { name: "主教", tag: "clergy", hat: "主教冠", emoji: "🤴" }, // Mitre
+        { name: "教皇", tag: "clergy", hat: "小圆帽", emoji: "🇻🇦" },
+        { name: "拉比", tag: "clergy", hat: "Kippah", emoji: "🕎" },
+        
+        { name: "新娘", tag: "vip", hat: "头纱", emoji: "👰" },
+        { name: "女王", tag: "vip", hat: "皇冠", emoji: "👸" },
+        { name: "贵妇", tag: "woman", hat: "礼帽", emoji: "👒" },
+        { name: "老奶奶", tag: "woman", hat: "毛线帽", emoji: "👵" },
+        
+        { name: "潜水员", tag: "absurd", hat: "氧气罩", emoji: "🤿" },
+        { name: "宇航员", tag: "absurd", hat: "太空盔", emoji: "👨‍🚀" },
+        { name: "养蜂人", tag: "absurd", hat: "防蜂罩", emoji: "🐝" },
+        { name: "木乃伊", tag: "absurd", hat: "绷带", emoji: "🤕" }
+    ];
+
+    const adjectives = [
+        "极度抑郁的", "刚中彩票的", "喝了二斤白酒的", "正在直播的", "想上厕所的", 
+        "愤怒的", "面无表情的", "刚失恋的", "欠了高利贷的", "自认为是神的", 
+        "社恐的", "来找茬的", "三天没洗头的", "正在吃大蒜的", "斗鸡眼的"
+    ];
+
+    const insults = [
+        "亵渎!", "大胆!", "疯了吗?", "住手!", "甚至不是人!", "大妈震怒!", "扣钱!", "没眼力!"
+    ];
+
+    /* ================= 游戏逻辑 ================= */
+
+    class Game {
+        constructor() {
+            this.reset();
+            this.leaderboard = JSON.parse(localStorage.getItem('hatGameLB_V2')) || [];
+        }
+
+        reset() {
+            this.score = 0;
+            this.lives = 3;
+            this.level = 1;
+            this.maxTime = 5000;
+            this.currentTime = 5000;
+            this.isPlaying = false;
+            this.lastTime = 0;
+            this.stats = {
+                wrongClergy: 0, // 得罪神职
+                wrongWoman: 0,  // 得罪女士
+                wrongMan: 0,    // 放进男人
+                totalPlayed: 0
+            };
+        }
+
+        start() {
+            this.reset();
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('end-screen').classList.add('hidden');
+            this.updateLives();
+            this.isPlaying = true;
+            this.nextTurn();
+            this.lastTime = Date.now();
+            this.loop();
+        }
+
+        generateCard() {
+            const role = roles[Math.floor(Math.random() * roles.length)];
+            const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
+            
+            // 逻辑：man 必须摘(false)，其他必须留(true)
+            const shouldKeep = role.tag !== 'man';
+            
+            return {
+                ...role,
+                fullName: adj + role.name,
+                shouldKeep: shouldKeep
+            };
+        }
+
+        nextTurn() {
+            if (this.score > 500) this.level = 2;
+            if (this.score > 1500) this.level = 3;
+            if (this.score > 3000) this.level = 4;
+
+            // 难度调整时间
+            this.maxTime = Math.max(1200, 5000 - (this.level * 800));
+            this.currentTime = this.maxTime;
+
+            this.currentCard = this.generateCard();
+            this.renderCard();
+        }
+
+        renderCard() {
+            const c = this.currentCard;
+            const html = `
+                <div class="card">
+                    <div class="card-header">Lv.${this.level} 检查中...</div>
+                    <div class="emoji-box">${c.emoji}</div>
+                    <div class="info-box">
+                        <div class="role-name">${c.name}</div>
+                        <div class="role-desc">"${c.fullName}"</div>
+                        <div class="hat-tag">${c.hat}</div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('card-wrapper').innerHTML = html;
+        }
+
+        input(choice) {
+            if (!this.isPlaying) return;
+
+            if (choice === this.currentCard.shouldKeep) {
+                // 正确
+                const bonus = Math.floor((this.currentTime / this.maxTime) * 20);
+                this.score += (10 + bonus);
+                document.getElementById('score').innerText = this.score;
+                this.nextTurn();
+            } else {
+                // 错误
+                this.handleFail();
+            }
+        }
+
+        handleFail() {
+            this.lives--;
+            this.updateLives();
+            this.showFeedback();
+            
+            // 记录错误原因用于结局生成
+            const tag = this.currentCard.tag;
+            if (tag === 'clergy') this.stats.wrongClergy++;
+            else if (tag === 'vip' || tag === 'woman') this.stats.wrongWoman++;
+            else if (tag === 'man') this.stats.wrongMan++;
+
+            // 震动效果
+            document.getElementById('game-area').style.animation = 'none';
+            void document.getElementById('game-area').offsetWidth;
+            document.getElementById('game-area').style.animation = 'slam 0.2s';
+
+            if (this.lives <= 0) {
+                this.gameOver();
+            } else {
+                this.nextTurn();
+            }
+        }
+
+        updateLives() {
+            let hearts = "";
+            for(let i=0; i<this.lives; i++) hearts += "❤️";
+            document.getElementById('lives-text').innerText = hearts;
+        }
+
+        showFeedback() {
+            const el = document.getElementById('feedback-text');
+            const txt = insults[Math.floor(Math.random() * insults.length)];
+            el.innerText = txt;
+            el.style.animation = 'none';
+            void el.offsetWidth;
+            el.style.animation = 'slam 0.5s ease-out';
+        }
+
+        loop() {
+            if (!this.isPlaying) return;
+            
+            const now = Date.now();
+            const dt = now - this.lastTime;
+            this.lastTime = now;
+            
+            this.currentTime -= dt;
+            const pct = (this.currentTime / this.maxTime) * 100;
+            document.getElementById('time-bar').style.width = pct + "%";
+            
+            if (this.currentTime <= 0) {
+                this.handleFail();
+            }
+            
+            requestAnimationFrame(() => this.loop());
+        }
+
+        gameOver() {
+            this.isPlaying = false;
+            document.getElementById('end-screen').classList.remove('hidden');
+            
+            // 生成结局文案
+            const ending = this.getEnding();
+            document.getElementById('end-emoji').innerText = ending.emoji;
+            document.getElementById('end-title').innerText = ending.title;
+            document.getElementById('end-desc').innerHTML = ending.desc;
+            document.getElementById('final-score').innerText = this.score;
+
+            this.saveScore();
+            this.renderLeaderboard();
+        }
+
+        getEnding() {
+            const s = this.stats;
+            // 优先级判定
+            
+            // 1. 亵渎神权 (错太多神职人员)
+            if (s.wrongClergy >= 1) {
+                return {
+                    emoji: "⚡",
+                    title: "绝罚预备役",
+                    desc: "你居然敢让<b>教皇/主教</b>摘帽子？<br>梵蒂冈连夜把你拉黑了。<br>你现在的地位比路德还叛逆，门口大妈都想拿扫帚打你。"
+                };
+            }
+            
+            // 2. 钢铁直男 (错太多女性)
+            if (s.wrongWoman >= 1) {
+                return {
+                    emoji: "💔",
+                    title: "注孤生协会会长",
+                    desc: "你非要<b>新娘</b>摘头纱，导致婚礼当场取消。<br>你让女王摘王冠，引发了外交事故。<br>你这种直男操作，上帝看了都摇头。"
+                };
+            }
+            
+            // 3. 滥好人 (放进太多不该戴帽子的男人)
+            if (s.wrongMan >= 2) {
+                return {
+                    emoji: "🎪",
+                    title: "帽子批发商",
+                    desc: "牛仔、厨师、甚至那个绿脸的僵尸...<br>你统统让他们戴着帽子进去了。<br>现在教堂看起来像个<b>化装舞会</b>，牧师已经气晕在厕所。"
+                };
+            }
+
+            // 4. 普通低分
+            if (this.score < 500) {
+                return {
+                    emoji: "🥬",
+                    title: "懵逼的实习生",
+                    desc: "一顿操作猛如虎，一看比分二百五。<br>分不清男女，也分不清人鬼。<br>建议先去门口卖蜡烛练练眼力。"
+                };
+            }
+
+            // 5. 高分大师
+            return {
+                emoji: "😇",
+                title: "圣堂守门人",
+                desc: "哈利路亚！你完美平衡了律法与恩典。<br>你的手速比大妈的嘴还快。<br>圣彼得发来Offer，问你愿不愿意去天堂门口顶个班。"
+            };
+        }
+
+        saveScore() {
+            this.leaderboard.push({ score: this.score, date: new Date().toLocaleTimeString() });
+            this.leaderboard.sort((a,b) => b.score - a.score);
+            this.leaderboard = this.leaderboard.slice(0, 5);
+            localStorage.setItem('hatGameLB_V2', JSON.stringify(this.leaderboard));
+        }
+
+        renderLeaderboard() {
+            const html = this.leaderboard.map((x, i) => `
+                <div class="lb-row">
+                    <span>#${i+1} 匿名修士</span>
+                    <b>${x.score}</b>
+                </div>
+            `).join('');
+            document.getElementById('lb-content').innerHTML = html || "<div style='text-align:center'>暂无记录</div>";
+        }
+    }
+
+    const game = new Game();
+
+</script>
+</body>
+</html>

@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>息焉圣夜：救主降生</title>
+    <style>
+        /* --- 1. 核心样式 --- */
+        :root {
+            --bg-night: #0b1026;
+            --bg-dawn: #4a2c20;
+            --gold: #ffd700;
+            --mary-blue: #1565c0;
+            --angel-white: #fff9c4;
+        }
+
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            background-color: var(--bg-night);
+            font-family: 'Georgia', serif;
+            color: #fff;
+            overflow-x: hidden;
+            transition: background-color 3s ease;
+        }
+
+        /* --- 2. 背景层 (息焉堂剪影) --- */
+        #bg-layer {
+            position: fixed; bottom: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1; pointer-events: none;
+        }
+        
+        /* 星空 */
+        .stars {
+            width: 100%; height: 60%;
+            background-image: radial-gradient(white 1px, transparent 1px);
+            background-size: 50px 50px; opacity: 0.5;
+        }
+
+        /* 息焉堂 (CSS 绘制) */
+        .church-silhouette {
+            position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
+            width: 100%; max-width: 500px; height: 350px;
+            display: flex; justify-content: center; align-items: flex-end;
+            opacity: 0.3;
+        }
+        .dome {
+            width: 160px; height: 160px; background: #1a1a1a;
+            border-radius: 80px 80px 0 0; /* 穹顶 */
+            position: relative; margin-bottom: -5px;
+            border: 2px solid #333;
+        }
+        .dome::before { /* 十字架 */
+            content: '✝'; color: #333; font-size: 40px;
+            position: absolute; top: -40px; left: 50%; transform: translateX(-50%);
+        }
+        .building-body {
+            width: 200px; height: 150px; background: #151515;
+            position: absolute; bottom: 0;
+        }
+        .window {
+            width: 20px; height: 40px; background: #000;
+            border-radius: 10px 10px 0 0; border: 1px solid #333;
+            margin: 20px auto;
+        }
+
+        /* --- 3. 游戏流程容器 --- */
+        #scroll-container {
+            width: 100%; padding-bottom: 120px;
+        }
+
+        .section {
+            min-height: 90vh; width: 100%;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            position: relative;
+        }
+
+        .verse {
+            background: rgba(0,0,0,0.5); padding: 10px 20px; border-radius: 20px;
+            color: var(--gold); font-style: italic; margin-bottom: 30px; text-align: center;
+            border: 1px solid rgba(255, 215, 0, 0.3); max-width: 80%;
+        }
+
+        /* --- 4. 角色与 SVG 图标 --- */
+        .entity {
+            display: flex; flex-direction: column; align-items: center;
+            cursor: pointer; transition: transform 0.2s;
+            filter: drop-shadow(0 5px 10px rgba(0,0,0,0.5));
+        }
+        .entity:active { transform: scale(0.9); }
+        
+        svg { overflow: visible; }
+
+        /* 小天使动画 */
+        .angel {
+            position: absolute; top: 100px;
+            animation: fly 3s infinite ease-in-out;
+        }
+        @keyframes fly { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-15px);} }
+
+        /* 圣母玛利亚 */
+        .mary-figure {
+            position: absolute; bottom: 50px; left: 20px;
+            z-index: 5;
+        }
+
+        /* 物品球 */
+        .item-orb {
+            width: 60px; height: 60px;
+            background: radial-gradient(circle at 30% 30%, #fff, #ccc);
+            border: 2px solid var(--gold); border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 30px; margin: 15px; animation: glow 2s infinite;
+        }
+        @keyframes glow { 0%,100%{box-shadow:0 0 10px var(--gold);} 50%{box-shadow:0 0 20px var(--gold);} }
+
+        /* --- 5. 核心场景：马槽 --- */
+        #manger-area {
+            width: 300px; height: 250px;
+            position: relative;
+            margin-top: 50px;
+        }
+        
+        /* 圣母 SVG */
+        #svg-mary { width: 100px; position: absolute; left: -20px; bottom: 0; }
+        
+        /* 马槽结构 */
+        #svg-manger { width: 180px; position: absolute; right: 20px; bottom: 0; }
+
+        /* 马槽内容物 */
+        .manger-item { opacity: 0; transition: opacity 1s; }
+        .manger-item.visible { opacity: 1; }
+
+        /* 天使群 (结局出现) */
+        #angel-choir {
+            position: absolute; top: -80px; width: 100%;
+            display: flex; justify-content: center; gap: 20px;
+            opacity: 0; transition: opacity 2s; pointer-events: none;
+        }
+        #angel-choir.singing { opacity: 1; }
+
+        /* --- 6. UI --- */
+        #inventory {
+            position: fixed; bottom: 0; left: 0; width: 100%; height: 90px;
+            background: #2b1d14; border-top: 3px solid var(--gold);
+            display: flex; justify-content: center; align-items: center; gap: 15px;
+            z-index: 100;
+        }
+        .slot {
+            width: 60px; height: 60px; background: rgba(0,0,0,0.5);
+            border: 1px solid #666; border-radius: 10px;
+            display: flex; justify-content: center; align-items: center; font-size: 30px;
+        }
+        .slot.has-item { border-color: #fff; background: rgba(255,215,0,0.2); }
+
+        /* 弹窗 */
+        #msg-box {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
+            width: 80%; background: rgba(0,0,0,0.95); border: 2px solid var(--gold);
+            padding: 20px; border-radius: 15px; text-align: center; display: none; z-index: 200;
+        }
+        
+    </style>
+</head>
+<body>
+
+    <!-- SVG 定义库 (隐藏) -->
+    <svg style="display:none;">
+        <!-- 圣母玛利亚 (蓝袍，跪姿) -->
+        <symbol id="icon-mary" viewBox="0 0 100 150">
+            <path d="M30,150 L30,60 Q50,20 70,60 L70,150 Z" fill="#1565c0"/> <!-- 身体 -->
+            <path d="M25,60 Q50,0 75,60" fill="none" stroke="#fff" stroke-width="2"/> <!-- 头巾轮廓 -->
+            <circle cx="50" cy="50" r="15" fill="#ffccbc"/> <!-- 脸 -->
+            <path d="M20,60 Q50,10 80,60 L80,100 L20,100 Z" fill="#0d47a1" opacity="0.3"/> <!-- 披风阴影 -->
+            <circle cx="50" cy="40" r="25" fill="none" stroke="gold" stroke-width="2"/> <!-- 光环 -->
+        </symbol>
+
+        <!-- 小天使 -->
+        <symbol id="icon-angel" viewBox="0 0 100 100">
+            <path d="M10,40 Q-10,10 30,30" fill="#fff" stroke="#gold" stroke-width="1"/> <!-- 左翼 -->
+            <path d="M90,40 Q110,10 70,30" fill="#fff" stroke="#gold" stroke-width="1"/> <!-- 右翼 -->
+            <circle cx="50" cy="30" r="12" fill="#ffccbc"/> <!-- 头 -->
+            <path d="M30,80 L50,30 L70,80" fill="#fff9c4"/> <!-- 长袍 -->
+            <ellipse cx="50" cy="20" rx="15" ry="5" stroke="gold" fill="none" stroke-width="2"/> <!-- 光圈 -->
+        </symbol>
+
+        <!-- 牧羊人 -->
+        <symbol id="icon-shepherd" viewBox="0 0 100 150">
+            <rect x="35" y="50" width="30" height="100" fill="#5d4037"/>
+            <circle cx="50" cy="40" r="15" fill="#d7ccc8"/>
+            <path d="M80,150 L80,30 Q90,20 70,20" stroke="#8d6e63" stroke-width="5" fill="none"/>
+        </symbol>
+
+        <!-- 马槽 -->
+        <symbol id="icon-manger-empty" viewBox="0 0 200 150">
+            <path d="M20,80 L40,130 L160,130 L180,80" fill="none" stroke="#5d4037" stroke-width="8"/>
+            <line x1="50" y1="130" x2="30" y2="150" stroke="#5d4037" stroke-width="6"/>
+            <line x1="150" y1="130" x2="170" y2="150" stroke="#5d4037" stroke-width="6"/>
+        </symbol>
+    </svg>
+
+    <!-- 背景 -->
+    <div id="bg-layer">
+        <div class="stars"></div>
+        <!-- 息焉堂剪影 -->
+        <div class="church-silhouette">
+            <div class="dome"></div>
+            <div class="building-body">
+                <div class="window"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 游戏内容 -->
+    <div id="scroll-container">
+        
+        <!-- 1. 天使报喜 -->
+        <div class="section">
+            <div class="angel" style="top:150px; width:100px;">
+                <svg viewBox="0 0 100 100" style="width:100px;"><use href="#icon-angel"/></svg>
+            </div>
+            <div style="font-size:60px; margin-top:100px; color:gold; text-shadow:0 0 20px gold;">★</div>
+            <div class="verse">“天主在天受光荣，主爱的人在世享平安。”</div>
+            <div style="font-size:12px; color:#aaa; margin-top:50px;">↓ 向下滑动进入息焉堂 ↓</div>
+        </div>
+
+        <!-- 2. 牧羊人的礼物 -->
+        <div class="section">
+            <div class="entity" onclick="pickup('hay', '干草', '🌾')">
+                <svg viewBox="0 0 100 150" style="width:120px;"><use href="#icon-shepherd"/></svg>
+                <div style="margin-top:5px;">牧羊人</div>
+            </div>
+            <div class="item-orb" id="orb-hay">🌾</div>
+            <div class="verse">牧羊人献上干草，为圣婴铺床。</div>
+        </div>
+
+        <!-- 3. 贤士的礼物 -->
+        <div class="section">
+            <div style="display:flex; gap:20px;">
+                <div class="item-orb" id="orb-cloth" onclick="pickup('cloth', '襁褓', '🏳️')">🏳️</div>
+                <div class="item-orb" id="orb-gift" onclick="pickup('gift', '礼物', '🎁')">🎁</div>
+            </div>
+            <div class="verse">“我们看见他的星，特来朝拜他。”</div>
+        </div>
+
+        <!-- 4. 息焉堂马槽 (核心场景) -->
+        <div class="section" style="justify-content: flex-end; padding-bottom: 150px;">
+            <div class="verse">“今天在达味城中，为你们诞生了一位救世者。”</div>
+            
+            <div id="manger-area" onclick="interactManger()">
+                <!-- 天使合唱团 (初始隐藏) -->
+                <div id="angel-choir">
+                    <svg style="width:60px;"><use href="#icon-angel"/></svg>
+                    <svg style="width:80px; margin-top:-20px;"><use href="#icon-angel"/></svg>
+                    <svg style="width:60px;"><use href="#icon-angel"/></svg>
+                </div>
+
+                <!-- 圣母 -->
+                <div id="svg-mary">
+                    <svg viewBox="0 0 100 150" style="width:120px;"><use href="#icon-mary"/></svg>
+                </div>
+
+                <!-- 马槽 -->
+                <div id="svg-manger">
+                    <svg viewBox="0 0 200 150" style="width:200px;">
+                        <use href="#icon-manger-empty"/>
+                        <!-- 动态内容 -->
+                        <text x="70" y="100" font-size="50" class="manger-item" id="show-hay">🌾</text>
+                        <text x="80" y="90" font-size="50" class="manger-item" id="show-cloth">🏳️</text>
+                        <text x="85" y="80" font-size="60" class="manger-item" id="show-jesus" style="filter:drop-shadow(0 0 15px gold);">👶</text>
+                    </svg>
+                </div>
+            </div>
+            
+            <div style="color:var(--gold); margin-top:20px; font-size:14px; animation:glow 2s infinite;">点击马槽布置 (Tap Manger)</div>
+        </div>
+
+    </div>
+
+    <!-- 底部物品栏 -->
+    <div id="inventory">
+        <div class="slot" id="slot-hay">🌾</div>
+        <div class="slot" id="slot-cloth">🏳️</div>
+        <div class="slot" id="slot-gift">🎁</div>
+    </div>
+
+    <!-- 弹窗 -->
+    <div id="msg-box">
+        <h3 id="msg-title" style="color:var(--gold); margin-top:0;"></h3>
+        <p id="msg-text"></p>
+        <button onclick="document.getElementById('msg-box').style.display='none'" style="padding:5px 20px; background:var(--gold); border:none; border-radius:5px;">确定</button>
+    </div>
+
+    <script>
+        const state = {
+            hasHay: false, hasCloth: false, hasGift: false,
+            step: 0 // 0:空, 1:有草, 2:有布, 3:完成
+        };
+
+        function pickup(type, name, icon) {
+            document.getElementById('orb-' + type).style.display = 'none';
+            state['has' + type.charAt(0).toUpperCase() + type.slice(1)] = true;
+            
+            // UI 反馈
+            const slot = document.getElementById('slot-' + type);
+            slot.classList.add('has-item');
+            
+            alertMsg("获得 " + name, "请带往息焉堂的马槽。");
+        }
+
+        function interactManger() {
+            // 步骤 1: 铺草
+            if (state.step === 0) {
+                if (state.hasHay) {
+                    document.getElementById('show-hay').classList.add('visible');
+                    state.step = 1;
+                    alertMsg("铺上干草", "马槽变得柔软了。圣母微笑了。");
+                } else {
+                    alertMsg("马槽是空的", "请向上去找牧羊人要些【干草 🌾】。");
+                }
+            }
+            // 步骤 2: 铺布
+            else if (state.step === 1) {
+                if (state.hasCloth) {
+                    document.getElementById('show-cloth').classList.add('visible');
+                    state.step = 2;
+                    alertMsg("铺好襁褓", "洁白的布已预备好，只等候那一刻。");
+                } else {
+                    alertMsg("缺少襁褓", "请去寻找【襁褓 🏳️】。");
+                }
+            }
+            // 步骤 3: 献礼 (结局)
+            else if (state.step === 2) {
+                if (state.hasGift) {
+                    // 最终动画
+                    document.getElementById('show-jesus').classList.add('visible');
+                    document.getElementById('angel-choir').classList.add('singing');
+                    state.step = 3;
+                    
+                    // 背景变暖
+                    document.body.style.backgroundColor = "#4a2c20";
+                    
+                    alertMsg("❤️ 救主降生 ❤️", "耶稣圣婴降临在息焉堂！\n诸天歌唱，大地欢腾！");
+                } else {
+                    alertMsg("缺少礼物", "贤士们的【礼物 🎁】在哪里？");
+                }
+            }
+        }
+
+        function alertMsg(title, text) {
+            document.getElementById('msg-title').innerText = title;
+            document.getElementById('msg-text').innerText = text;
+            document.getElementById('msg-box').style.display = 'block';
+        }
+    </script>
+</body>
+</html>

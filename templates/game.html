@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>毛茸茸的彩虹派对</title>
+    <style>
+        /* CSS 样式：保持可爱风格 */
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #FFEFF5;
+            font-family: "Rounded Mplus 1c", "Segoe UI", Arial, sans-serif;
+            touch-action: none;
+            user-select: none;
+        }
+
+        #gameCanvas {
+            display: block;
+            margin: 0 auto;
+            background: linear-gradient(to bottom, #E0F7FA, #FFEFF5);
+        }
+
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.9);
+            z-index: 10;
+        }
+
+        h1 {
+            color: #FF6B6B;
+            font-size: 2.5rem;
+            text-shadow: 2px 2px #fff;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        p {
+            color: #555;
+            font-size: 1.2rem;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .btn {
+            background-color: #FF9F43;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.5rem;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 5px 0 #E67E22;
+            transition: transform 0.1s;
+            outline: none;
+        }
+
+        .btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 1px 0 #E67E22;
+        }
+
+        #ui-layer {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            font-size: 1.5rem;
+            color: #FF6B6B;
+            font-weight: bold;
+            pointer-events: none;
+            text-shadow: 1px 1px 0 #fff;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="ui-layer">
+        ❤️ 接到朋友: <span id="scoreDisplay">0</span> / 10
+    </div>
+
+    <!-- 开始界面 -->
+    <div id="startScreen" class="overlay">
+        <!-- 这里的img标签只是为了在开始菜单展示一下，你可以把 orange_monster.png 也放在这里 -->
+        <h1 style="font-size: 60px;">🧡</h1> 
+        <h1>毛茸茸的<br>彩虹派对</h1>
+        <p>左右拖动橙色小怪兽<br>去接住掉下来的朋友们！</p>
+        <button class="btn" onclick="startGame()">开始游戏</button>
+    </div>
+
+    <!-- 胜利界面 -->
+    <div id="winScreen" class="overlay hidden">
+        <h1 style="font-size: 60px;">🎉🎂</h1>
+        <h1>太棒啦！</h1>
+        <p>派对开始咯！</p>
+        <button class="btn" onclick="startGame()">再玩一次</button>
+    </div>
+
+    <!-- 失败界面 -->
+    <div id="loseScreen" class="overlay hidden">
+        <h1 style="font-size: 60px;">🌩️😰</h1>
+        <h1>哎呀！</h1>
+        <p>撞到乌云了，再试一次吧！</p>
+        <button class="btn" onclick="startGame()">重新开始</button>
+    </div>
+
+    <script>
+        // --- 1. 图片加载区域 ---
+        
+        // 主角图片
+        const playerImg = new Image();
+        playerImg.src = '/static/player.png'; 
+
+        // 朋友图片列表 (你可以把 friend3.png, friend4.png 继续加进这个数组)
+        const friendSources = ['friend1.png','friend2.png','friend3.png','friend4.png','friend5.png'];
+        const friendImages = [];
+        
+        // 预加载所有朋友图片
+        friendSources.forEach(src => {
+            const img = new Image();
+            img.src = "/static/"+ src;
+            friendImages.push(img);
+        });
+
+        // 障碍物 (如果没有图片，这里依然使用Emoji，如果想换图片，修改 drawItem 函数)
+        const enemyEmoji = '🌩️'; 
+
+        // --- 游戏配置 ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreDisplay = document.getElementById('scoreDisplay');
+        
+        let gameRunning = false;
+        let score = 0;
+        let items = []; 
+        let animationId;
+        
+        // 主角设置
+        const player = {
+            x: 0,
+            y: 0,
+            width: 100,  // 图片宽度，根据需要调整
+            height: 100  // 图片高度
+        };
+
+        // 屏幕适配
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            player.y = canvas.height - player.height - 30; // 距离底部一点距离
+            player.x = canvas.width / 2 - player.width / 2;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // --- 游戏逻辑 ---
+
+        function startGame() {
+            score = 0;
+            items = [];
+            gameRunning = true;
+            scoreDisplay.innerText = score;
+            
+            document.querySelectorAll('.overlay').forEach(el => el.classList.add('hidden'));
+            
+            if (animationId) cancelAnimationFrame(animationId);
+            gameLoop();
+            spawnItemLoop();
+        }
+
+        function gameOver(win) {
+            gameRunning = false;
+            if (win) {
+                document.getElementById('winScreen').classList.remove('hidden');
+            } else {
+                document.getElementById('loseScreen').classList.remove('hidden');
+            }
+        }
+
+        function spawnItem() {
+            if (!gameRunning) return;
+            
+            const size = 70; // 掉落物的大小
+            const x = Math.random() * (canvas.width - size);
+            
+            // 80% 概率是朋友，20% 是障碍
+            const isFriend = Math.random() > 0.2;
+            
+            let itemImg = null;
+            if (isFriend) {
+                // 随机从加载好的朋友图片里选一张
+                const randomIndex = Math.floor(Math.random() * friendImages.length);
+                itemImg = friendImages[randomIndex];
+            }
+
+            items.push({
+                x: x,
+                y: -80,
+                width: size,
+                height: size,
+                speed: Math.random() * 2 + 3, // 速度
+                type: isFriend ? 'friend' : 'enemy',
+                img: itemImg // 如果是敌人，这里是 null
+            });
+        }
+
+        function spawnItemLoop() {
+            if (!gameRunning) return;
+            spawnItem();
+            setTimeout(spawnItemLoop, 1000); // 生成频率
+        }
+
+        function movePlayer(clientX) {
+            let newX = clientX - player.width / 2;
+            if (newX < 0) newX = 0;
+            if (newX > canvas.width - player.width) newX = canvas.width - player.width;
+            player.x = newX;
+        }
+
+        // 交互监听
+        canvas.addEventListener('mousemove', e => { if (gameRunning) movePlayer(e.clientX); });
+        canvas.addEventListener('touchmove', e => { 
+            if (gameRunning) {
+                e.preventDefault();
+                movePlayer(e.touches[0].clientX);
+            }
+        }, { passive: false });
+        canvas.addEventListener('touchstart', e => {
+            if (gameRunning) {
+                e.preventDefault();
+                movePlayer(e.touches[0].clientX);
+            }
+        }, { passive: false });
+
+        // 主循环
+        function gameLoop() {
+            if (!gameRunning) return;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 1. 绘制主角 (使用图片)
+            if (playerImg.complete) {
+                ctx.drawImage(playerImg, player.x, player.y, player.width, player.height);
+            } else {
+                // 图片没加载出来时的备用方块
+                ctx.fillStyle = 'orange';
+                ctx.fillRect(player.x, player.y, player.width, player.height);
+            }
+
+            // 2. 处理掉落物
+            for (let i = items.length - 1; i >= 0; i--) {
+                let item = items[i];
+                item.y += item.speed;
+
+                // 绘制掉落物
+                if (item.type === 'friend' && item.img && item.img.complete) {
+                    // 画朋友图片
+                    ctx.drawImage(item.img, item.x, item.y, item.width, item.height);
+                } else if (item.type === 'enemy') {
+                    // 画乌云 (Emoji)
+                    ctx.font = "50px Arial";
+                    ctx.textAlign = "center";
+                    ctx.textBaseline = "middle";
+                    ctx.fillText(enemyEmoji, item.x + item.width/2, item.y + item.height/2);
+                } else {
+                    // 备用色块
+                    ctx.fillStyle = item.type === 'friend' ? 'pink' : 'gray';
+                    ctx.fillRect(item.x, item.y, item.width, item.height);
+                }
+
+                // 碰撞检测
+                // 稍微缩小一点判定范围，让小朋友更容易接到，且不容易撞到乌云
+                const hitPadding = 10; 
+                if (
+                    player.x + hitPadding < item.x + item.width &&
+                    player.x + player.width - hitPadding > item.x &&
+                    player.y + hitPadding < item.y + item.height &&
+                    player.y + player.height - hitPadding > item.y
+                ) {
+                    if (item.type === 'friend') {
+                        score++;
+                        scoreDisplay.innerText = score;
+                        items.splice(i, 1);
+                        if (score >= 10) gameOver(true);
+                    } else {
+                        gameOver(false);
+                    }
+                } 
+                else if (item.y > canvas.height) {
+                    items.splice(i, 1);
+                }
+            }
+
+            animationId = requestAnimationFrame(gameLoop);
+        }
+    </script>
+</body>
+</html>

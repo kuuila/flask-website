@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>弥小乐 | TERMINAL</title>
+    <!-- 引入复古终端像素字体 -->
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #000000;
+            --term-green: #33ff00; /* 经典的终端荧光绿 */
+            --term-glow: #33ff00;
+            --term-dim: #1a8000;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--term-green);
+            font-family: 'VT323', monospace; /* 核心字体 */
+            margin: 0;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            /* 给所有文字增加荧光辉光 */
+            text-shadow: 0 0 2px var(--term-dim), 0 0 5px var(--term-glow);
+        }
+
+        /* --- CRT 屏幕特效层 --- */
+        .crt-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 100;
+            /* 扫描线 */
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 4px, 3px 100%;
+            /* 屏幕四周暗角 */
+            box-shadow: inset 0 0 100px rgba(0,0,0,0.9);
+        }
+
+        /* --- 终端窗口 --- */
+        .terminal-window {
+            width: 90vw;
+            max-width: 600px;
+            height: 90vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            z-index: 10;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        /* 顶部状态栏 */
+        .status-bar {
+            border-bottom: 2px solid var(--term-green);
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 1.2rem;
+            text-transform: uppercase;
+            opacity: 0.8;
+        }
+
+        /* 内容输出区 */
+        .console-output {
+            flex-grow: 1;
+            font-size: 1.5rem; /* 大号像素字，利于手机阅读 */
+            line-height: 1.6;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            scrollbar-width: none; /* 隐藏滚动条 */
+            padding-bottom: 60px;
+        }
+        .console-output::-webkit-scrollbar { display: none; }
+
+        /* --- 动态元素样式 --- */
+        
+        /* 光标：实心方块 */
+        .cursor {
+            display: inline-block;
+            width: 12px;
+            height: 24px;
+            background-color: var(--term-green);
+            vertical-align: text-bottom;
+            animation: blink 1s step-end infinite;
+            margin-left: 2px;
+        }
+
+        /* 强调文字：更亮，带闪烁 */
+        .highlight {
+            color: #ccffcc;
+            text-shadow: 0 0 8px #ccffcc;
+            font-weight: bold;
+        }
+        .pulse {
+            animation: textPulse 1s infinite alternate;
+        }
+
+        /* 图片处理：强制转为绿屏单色风格 */
+        .inserted-logo {
+            display: block;
+            width: 120px;
+            height: 120px;
+            margin: 20px auto;
+            border: 2px solid var(--term-green);
+            border-radius: 50%; /* 如果想要方形复古感，去掉这一行 */
+            opacity: 0;
+            
+            /* 核心魔法：将彩色/黑白图片滤镜处理为荧光绿 */
+            filter: grayscale(100%) sepia(100%) hue-rotate(60deg) saturate(500%) brightness(0.9) drop-shadow(0 0 8px var(--term-green));
+            
+            animation: imageScanIn 0.5s steps(10) forwards; /* 逐帧扫描出现的动画 */
+        }
+
+        /* 底部按钮区 */
+        .input-line {
+            margin-top: 20px;
+            opacity: 0;
+            transition: opacity 1s;
+        }
+        
+        .enter-btn {
+            background: transparent;
+            border: 2px solid var(--term-green);
+            color: var(--term-green);
+            padding: 15px 20px;
+            font-family: 'VT323', monospace;
+            font-size: 1.4rem;
+            text-decoration: none;
+            display: block;
+            text-align: center;
+            cursor: pointer;
+            text-shadow: inherit;
+        }
+        .enter-btn:hover, .enter-btn:active {
+            background: var(--term-green);
+            color: #000;
+            box-shadow: 0 0 20px var(--term-green);
+        }
+
+        /* --- 动画定义 --- */
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+        
+        @keyframes imageScanIn {
+            0% { opacity: 0; clip-path: inset(0 100% 0 0); }
+            100% { opacity: 1; clip-path: inset(0 0 0 0); }
+        }
+
+        @keyframes textPulse {
+            from { text-shadow: 0 0 2px var(--term-green); opacity: 0.8; }
+            to { text-shadow: 0 0 10px var(--term-green); opacity: 1; }
+        }
+
+        /* 手机适配微调 */
+        @media (max-width: 400px) {
+            .console-output { font-size: 1.3rem; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- CRT 效果覆盖层 -->
+    <div class="crt-overlay"></div>
+
+    <div class="terminal-window">
+        <!-- 顶部状态栏 -->
+        <div class="status-bar">
+            <span>MXLE_OS v1.0</span>
+            <span>CONN: OK</span>
+        </div>
+
+        <!-- 内容输出 -->
+        <div class="console-output" id="console">
+            <span id="output"></span><span class="cursor"></span>
+        </div>
+
+        <!-- 底部输入/按钮 -->
+        <div class="input-line" id="footer">
+            <a href="/s/mxle_lucky" class="enter-btn">>> ENTER THE MXLE STORE</a>
+        </div>
+    </div>
+
+    <script>
+        // --- 剧本数据 ---
+        // 纯控制台风格，无需复杂的HTML标签，除了关键的高亮和图片
+        const script = [
+            { text: "\nSYSTEM BOOT...", delay: 500 },
+            { text: "\nLOADING MEMORY...", delay: 800 },
+            { text: "\n--------------------------------", delay: 500 },
+            { text: "\n凌晨三点，笔记本又烫手了。", delay: 800 },
+            { text: "\n第3927个程序版本的编译完成!", delay: 800 },
+            { text: "\n...启动",delay: 800 },
+            { text: "\n...逻辑完美",delay: 800 },
+            { text: "\n...运行正常",delay: 800 },
+
+            { text: "\n\n但是...",delay: 800},
+            { text: "\n...",delay: 800},
+            { text: "\n我在逻辑的旷野中已经游荡了数十载...祂为何我而去？",delay: 1500},
+            { text: "\n我的指尖已经感受不到一丝的温度。\n这真的正常吗?", delay: 1500 },
+            { text: "\n\n于是，我开始在现实中寻找  <span class='highlight pulse'>BUG。</span>", delay: 1300 },
+            { text: "\n直到我拾起这些 <span class='highlight pulse'>小物件。</span>", delay: 1300 },
+            { text: "\n当我握住它们时，", delay: 1100 },
+            { text: "听到某种 <span class='highlight pulse'>心跳的频率</span>。", delay: 1500 },
+            
+            // --- 插入 LOGO (图片) ---
+            { type: 'image', src: '/static/logo_wb.jpg', delay: 1100 },
+            
+            { text: "\n<span class='highlight pulse'>弥小乐杂货铺</span>，", delay: 1200 },
+            { text: "便诞生于此。", delay: 1200 },
+            
+            { text: "\n\n我 <span class='highlight'>执意</span> 地认为，", delay: 1100 },
+            { text: "那些是内心关于爱的感受的溢出。", delay: 1500 },
+            { text: "\n既然是溢出，", delay: 1200 },
+            { text: "那就应该随它，", delay: 1200 },
+            { text: "继续自然的 <span class='highlight'>流淌</span>。", delay: 1500 },
+            { text: "\n\n既然是流淌，", delay: 800 },
+            { text: "\n那无论是馈赠、交换、", delay: 1300 },
+            { text: "\n交易还是收藏。", delay: 1300 },
+            { text: "\n都不影响它，", delay: 900 },
+            { text: "源于<span class='highlight'>心爱之物</span>的本来面貌。", delay: 1900 },
+            { text: "\n--------------------------------", delay: 1500 },
+            { text: "READY.", delay: 1300 }
+        ];
+
+        const output = document.getElementById('output');
+        const container = document.getElementById('console');
+        const footer = document.getElementById('footer');
+        const cursor = document.querySelector('.cursor');
+
+        // 音效模拟 (可选，如果不想有打字机声音逻辑可忽略，这里仅做视觉处理)
+        
+        async function playScript() {
+            for (let i = 0; i < script.length; i++) {
+                const item = script[i];
+
+                // 1. 图片处理
+                if (item.type === 'image') {
+                    const img = document.createElement('img');
+                    img.src = item.src;
+                    img.className = 'inserted-logo';
+                    // 即使图片加载失败，也添加一个替代的方块，保持终端完整性
+                    img.onerror = function() { this.style.border = "2px dashed var(--term-green)"; this.alt="[IMG NOT FOUND]"; };
+                    
+                    output.appendChild(document.createElement('br'));
+                    output.appendChild(img);
+                    scrollToBottom();
+                    await wait(item.delay);
+                    continue;
+                }
+
+                // 2. 文本处理
+                let content = item.text;
+                
+                // 处理开头的换行
+                while (content.startsWith('\n')) {
+                    output.appendChild(document.createElement('br'));
+                    content = content.substring(1);
+                }
+
+                if (!content) { await wait(item.delay); continue; }
+
+                // HTML 高亮块处理 (整块输出，模拟数据块传输)
+                if (content.includes('<')) {
+                    const span = document.createElement('span');
+                    span.innerHTML = content;
+                    output.appendChild(span);
+                    scrollToBottom();
+                    await wait(500); // 数据块传输延迟
+                } 
+                else {
+                    // 纯文本：逐字打印 (Console Print)
+                    await typeChars(content);
+                }
+
+                await wait(item.delay);
+            }
+
+            // 结束
+            cursor.style.display = 'none'; // 隐藏光标
+            footer.style.opacity = 1;      // 显示底部按钮
+        }
+
+        function typeChars(str) {
+            return new Promise(resolve => {
+                let index = 0;
+                function next() {
+                    if (index < str.length) {
+                        const char = str.charAt(index);
+                        // 创建文本节点插入，避免HTML转义问题
+                        output.appendChild(document.createTextNode(char));
+                        scrollToBottom();
+                        index++;
+                        // 终端打字速度：非常快且机械，20ms - 50ms
+                        setTimeout(next, Math.random() * 30 + 20);
+                    } else {
+                        resolve();
+                    }
+                }
+                next();
+            });
+        }
+
+        function scrollToBottom() {
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function wait(ms) {
+            return new Promise(r => setTimeout(r, ms));
+        }
+
+        // 启动程序
+        window.onload = () => {
+            setTimeout(playScript, 800);
+        };
+
+    </script>
+</body>
+</html>

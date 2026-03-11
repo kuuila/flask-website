@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GAO LINGYUN - Portfolio</title>
+    <style>
+        :root {
+            --bg-color: #ffffff;
+            --text-color: #1a1a1a;
+            --transition-speed: 0.4s;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html {
+            /* 实现平滑滚动 */
+            scroll-behavior: smooth;
+            /* 防止内容被置顶头部遮挡，设置滚动偏移量 */
+            scroll-padding-top: 180px; 
+        }
+
+        body {
+            font-family: "Times New Roman", Times, "Songti SC", serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
+
+        /* --- 动态悬浮置顶头部 --- */
+        header {
+            position: sticky;
+            top: 0;
+            background-color: rgba(255, 255, 255, 0.98);
+            padding: 60px 5vw 20px 5vw;
+            z-index: 1000;
+            transition: padding var(--transition-speed) ease;
+        }
+
+        /* 滚动后的头部样式（收缩状态） */
+        header.scrolled {
+            padding-top: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .name {
+            font-size: 3.5rem;
+            font-weight: 400;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            display: block;
+            transition: font-size var(--transition-speed) ease;
+            cursor: pointer;
+        }
+
+        header.scrolled .name {
+            font-size: 1.5rem; /* 滚动后变小 */
+        }
+
+        /* 导航菜单 */
+        .nav-links {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            margin-top: 30px;
+            transition: opacity 0.3s ease, height 0.3s ease;
+        }
+
+        /* 滚动后隐藏部分菜单以节省空间（可选） */
+        header.scrolled .nav-links {
+            margin-top: 10px;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--text-color);
+            font-size: 1.1rem;
+            width: fit-content;
+            cursor: pointer;
+        }
+
+        .nav-links a:hover { opacity: 0.5; }
+
+        .year-selector {
+            font-style: italic;
+            font-size: 1.4rem;
+            word-spacing: 10px;
+            margin-top: 30px;
+        }
+
+        .year-selector a {
+            text-decoration: none;
+            color: inherit;
+            transition: opacity 0.3s;
+        }
+
+        .year-selector a:hover { opacity: 0.5; }
+
+        /* --- 弹窗子页样式 (Modal) --- */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.98);
+            z-index: 2000;
+            display: none; /* 默认隐藏 */
+            justify-content: center;
+            align-items: center;
+            padding: 50px;
+        }
+
+        .overlay-content {
+            max-width: 600px;
+            text-align: center;
+        }
+
+        .overlay-content h2 {
+            font-size: 2rem;
+            margin-bottom: 20px;
+            font-weight: normal;
+            text-transform: uppercase;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 40px;
+            right: 40px;
+            font-size: 2rem;
+            cursor: pointer;
+        }
+
+        /* --- 内容区域 --- */
+        .container {
+            padding: 0 5vw;
+        }
+
+        .year-section {
+            padding-top: 50px;
+            margin-bottom: 100px;
+        }
+
+        .year-title-mark {
+            font-style: italic;
+            font-size: 1rem;
+            color: #999;
+            margin-bottom: 20px;
+        }
+
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 20px;
+        }
+
+        .item img {
+            width: 100%;
+            height: auto;
+            display: block;
+            transition: opacity 0.5s;
+        }
+
+        /* 模拟图片分布 */
+        .item-1 { grid-column: 1 / span 3; }
+        .item-2 { grid-column: 9 / span 3; margin-top: 50px; }
+        .item-3 { grid-column: 4 / span 5; margin-top: -30px; }
+
+        /* --- 手机适配 --- */
+        @media (max-width: 768px) {
+            html { scroll-padding-top: 220px; }
+            header { padding-top: 30px; }
+            .name { font-size: 2rem; }
+            header.scrolled .name { font-size: 1.2rem; }
+            .gallery { display: block; }
+            .item { margin-bottom: 50px; width: 100% !important; margin-left: 0 !important; }
+        }
+    </style>
+</head>
+<body>
+
+    <header id="mainHeader">
+        <span class="name" onclick="window.scrollTo(0,0)">GAO LINGYUN</span>
+        
+        <nav class="nav-links">
+            <a onclick="openModal('info')">Information</a>
+            <a onclick="openModal('email')">Email</a>
+            <a onclick="openModal('insta')">Instagram</a>
+        </nav>
+
+        <div class="year-selector">
+            <a href="#year-2025">2025</a> / 
+            <a href="#year-2024">2024</a> / 
+            <a href="#year-2023">2023</a> / 
+            <a href="#year-2022">2022</a>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- 2025 Section -->
+        <section id="year-2025" class="year-section">
+            <div class="year-title-mark">— 2025 Works</div>
+            <div class="gallery">
+                <div class="item item-1"><img src="https://picsum.photos/id/10/400/500" alt=""></div>
+                <div class="item item-2"><img src="https://picsum.photos/id/20/400/300" alt=""></div>
+                <div class="item item-3"><img src="https://picsum.photos/id/30/800/800" alt=""></div>
+            </div>
+        </section>
+
+        <!-- 2024 Section -->
+        <section id="year-2024" class="year-section">
+            <div class="year-title-mark">— 2024 Works</div>
+            <div class="gallery">
+                <div class="item item-2"><img src="https://picsum.photos/id/40/500/700" alt=""></div>
+                <div class="item item-1"><img src="https://picsum.photos/id/50/400/400" alt=""></div>
+            </div>
+        </section>
+        
+        <!-- 2023 Section -->
+        <section id="year-2023" class="year-section">
+            <div class="year-title-mark">— 2024 Works</div>
+            <div class="gallery">
+                <div class="item item-2"><img src="https://picsum.photos/id/40/500/700" alt=""></div>
+                <div class="item item-1"><img src="https://picsum.photos/id/50/400/400" alt=""></div>
+            </div>
+        </section>
+
+         <!-- 2023 Section -->
+        <section id="year-2022" class="year-section">
+            <div class="year-title-mark">— 2024 Works</div>
+            <div class="gallery">
+                <div class="item item-2"><img src="https://picsum.photos/id/40/500/700" alt=""></div>
+                <div class="item item-1"><img src="https://picsum.photos/id/50/400/400" alt=""></div>
+            </div>
+        </section>
+
+        <div style="height: 10vh;"></div> <!-- 占位符，模拟更多内容 -->
+    </div>
+
+    <!-- 弹窗子页结构 -->
+    <div id="modalOverlay" class="overlay">
+        <span class="close-btn" onclick="closeModal()">&times;</span>
+        <div class="overlay-content" id="modalContent">
+            <!-- 内容由 JS 动态注入 -->
+        </div>
+    </div>
+
+    <script>
+        // 1. 标题随鼠标滚动伸缩
+        const header = document.getElementById('mainHeader');
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 50) {
+                header.classList.add('scrolled');
+            } else {
+                header.classList.remove('scrolled');
+            }
+        });
+
+        // 2. 弹窗控制逻辑
+        const modalData = {
+            info: {
+                title: "Information",
+                body: "Gao Lingyun is a visual artist based in... <br><br> Exploring the boundaries between physical objects and digital space."
+            },
+            email: {
+                title: "Contact",
+                body: "Direct inquiries to: <br><strong>studio@gaolingyun.com</strong>"
+            },
+            insta: {
+                title: "Instagram",
+                body: "Follow the journey: <br><a href='#'>@gaolingyun_studio</a>"
+            }
+        };
+
+        function openModal(type) {
+            const content = modalData[type];
+            document.getElementById('modalContent').innerHTML = `
+                <h2>${content.title}</h2>
+                <p>${content.body}</p>
+            `;
+            document.getElementById('modalOverlay').style.display = 'flex';
+            document.body.style.overflow = 'hidden'; // 禁止背景滚动
+        }
+
+        function closeModal() {
+            document.getElementById('modalOverlay').style.display = 'none';
+            document.body.style.overflow = 'auto'; // 恢复背景滚动
+        }
+
+        // 点击遮罩层外侧关闭
+        window.onclick = function(event) {
+            const modal = document.getElementById('modalOverlay');
+            if (event.target == modal) {
+                closeModal();
+            }
+        }
+    </script>
+</body>
+</html>

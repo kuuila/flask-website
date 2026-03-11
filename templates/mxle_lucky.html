@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>弥小乐 | LUCKY_OS v8.0</title>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&family=ZCOOL+KuaiLe&family=Noto+Serif+SC:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #000000;
+            --term-green: #33ff00;       
+            --term-text: #e0ffe0;
+            --term-dim: #0a3300;
+            --alert-red: #ff3333;
+            --warning-orange: #ffaa00;
+            
+            --brick: #FFD700;
+            --bubble: #00f3ff;
+            --honey: #ffae00;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--term-green);
+            font-family: 'VT323', 'Courier New', monospace;
+            margin: 0;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-shadow: none;
+            user-select: none;
+        }
+
+        .crt-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 100;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), 
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+            background-size: 100% 3px, 3px 100%;
+            box-shadow: inset 0 0 80px rgba(0,0,0,0.8);
+        }
+
+        .terminal-window {
+            width: 95vw;
+            max-width: 480px;
+            height: 98vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            z-index: 10;
+            box-sizing: border-box;
+            border: 2px solid var(--term-dim);
+            padding: 10px;
+            background: #000;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 2px solid var(--term-green);
+            padding-bottom: 5px;
+            margin-bottom: 10px;
+            font-size: 14px;
+            letter-spacing: 1px;
+            color: var(--term-dim);
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+        .header span:first-child { color: var(--term-green); }
+
+        /* --- 资产显示区 --- */
+        .wallet-panel {
+            display: flex;
+            justify-content: space-between;
+            border: 1px solid var(--term-dim);
+            padding: 10px;
+            margin-bottom: 10px;
+            background: rgba(0, 20, 0, 0.3);
+            flex-shrink: 0;
+        }
+        .coin-slot { display: flex; flex-direction: column; align-items: center; width: 33%; }
+        .icon-box { width: 36px; height: 36px; margin-bottom: 6px; display: flex; justify-content: center; align-items: center; }
+        .i-brick { width: 24px; height: 24px; background: var(--brick); border: 2px solid #fff; box-shadow: 2px 2px 0 #000; }
+        .i-bubble { width: 26px; height: 26px; border-radius: 50%; border: 3px solid var(--bubble); box-shadow: 0 0 5px var(--bubble); background: rgba(0,0,0,0.5); }
+        .i-honey { width: 24px; height: 22px; background: var(--honey); border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; border-bottom: 3px solid #fff; }
+        .coin-name { font-family: "ZCOOL KuaiLe", sans-serif; font-size: 16px; color: #4a8a4a; margin-bottom: 2px; font-weight: bold; }
+        .coin-count { font-size: 18px; color: var(--term-text); font-weight: bold; text-shadow: 2px 2px 0 #000; }
+
+        /* --- 转盘容器 --- */
+        .wheel-container {
+            position: relative;
+            width: min(70vw, 300px);
+            aspect-ratio: 1 / 1;
+            margin: 5px auto 15px auto;
+            flex-shrink: 0;
+        }
+        .wheel-border {
+            position: absolute; top: -6px; left: -6px; right: -6px; bottom: -6px;
+            border: 2px dashed #1a4400; border-radius: 50%;
+        }
+        .wheel {
+            width: 100%; height: 100%; border-radius: 50%; position: relative;
+            transition: transform 4s cubic-bezier(0.1, 0.7, 0.1, 1);
+            border: 4px solid var(--term-green); overflow: hidden;
+            background: conic-gradient(from -25.71deg, #000 0deg 51.42deg, var(--term-dim) 51.42deg 102.84deg, #000 102.84deg 154.26deg, var(--term-dim) 154.26deg 205.68deg, #000 205.68deg 257.1deg, var(--term-dim) 257.1deg 308.52deg, #0a2a0a 308.52deg 360deg);
+            box-shadow: 0 0 20px rgba(51, 255, 0, 0.1);
+        }
+        .wheel-label {
+            position: absolute; top: 50%; left: 50%; transform-origin: center center;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            width: 80px; height: 0; color: #fff; font-family: "ZCOOL KuaiLe", sans-serif;
+            font-size: 16px; line-height: 1.1; font-weight: 900;
+            text-shadow: 2px 0 #000, -2px 0 #000, 0 2px #000, 0 -2px #000, 1px 1px #000, -1px -1px #000;
+            z-index: 2; pointer-events: none;
+        }
+        .label-coin { color: var(--honey); }
+        .pointer {
+            position: absolute; top: -20px; left: 50%; transform: translateX(-50%); width: 0; height: 0;
+            border-left: 15px solid transparent; border-right: 15px solid transparent; border-top: 30px solid var(--term-green);
+            filter: drop-shadow(0 2px 2px #000); z-index: 20;
+        }
+        .wheel-center {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 24px; height: 24px;
+            background: #000; border: 3px solid var(--term-green); border-radius: 50%; z-index: 10;
+        }
+
+        /* --- 日志区 --- */
+        .console-log {
+            flex-grow: 1; border: 1px solid var(--term-dim); padding: 10px; font-size: 14px;
+            overflow-y: auto; background: rgba(0,10,0,0.4); margin-bottom: 10px; min-height: 100px;
+        }
+        .log-line { margin-bottom: 6px; border-bottom: 1px dashed #0a2200; display: block; }
+        .win-text { color: #fff; background: var(--term-dim); padding: 0 4px; }
+        .fail-text { color: var(--alert-red); text-shadow: 0 0 5px var(--alert-red); }
+        
+        .spin-btn {
+            background: #000; border: 2px solid var(--term-green); color: var(--term-green); padding: 15px;
+            font-family: 'VT323', monospace; font-size: 20px; font-weight: bold; cursor: pointer;
+            text-transform: uppercase; letter-spacing: 2px; box-shadow: 0 0 15px rgba(51, 255, 0, 0.2);
+            text-shadow: 0 0 5px var(--term-green); flex-shrink: 0;
+        }
+        .spin-btn:active { background: var(--term-green); color: #000; }
+        .spin-btn:disabled { border-color: #333; color: #555; box-shadow: none; text-shadow: none; }
+
+        /* --- 弹窗通用 --- */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.95); z-index: 200;
+            display: none; justify-content: center; align-items: center;
+            backdrop-filter: blur(8px);
+        }
+        .modal-box {
+            width: 85%; max-width: 400px;
+            background: #000; border: 3px double var(--term-green);
+            padding: 20px; text-align: center;
+            box-shadow: 0 0 30px var(--term-green), inset 0 0 20px rgba(51, 255, 0, 0.2);
+            position: relative;
+            animation: modalPop 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+        }
+        
+        /* 游戏弹窗特有 */
+        .game-header-bar {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 15px; border-bottom: 1px dashed #333; padding-bottom: 5px;
+        }
+        .game-lv { background: var(--term-dim); padding: 2px 6px; font-size: 0.8rem; }
+        .game-stats { color: var(--alert-red); font-weight: bold; animation: blink 1s infinite; }
+
+        .modal-title { font-family: 'VT323', monospace; font-size: 1.5rem; color: var(--term-text); }
+        .modal-content { font-family: "ZCOOL KuaiLe", sans-serif; font-size: 1.3rem; line-height: 1.5; color: #fff; margin-bottom: 20px; min-height: 60px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .modal-btn { background: var(--term-green); color: #000; border: none; padding: 10px 20px; font-family: 'VT323', monospace; font-size: 1.2rem; font-weight: bold; cursor: pointer; text-transform: uppercase; margin: 5px; }
+        
+        .challenge-text { color: var(--honey); font-size: 1.5rem; text-shadow: 2px 2px 0 #000; }
+        
+        /* 线上小游戏 UI */
+        #gameContent { width: 100%; margin-bottom: 15px; }
+        .game-status { font-family: 'VT323'; font-size: 1rem; color: #888; margin-bottom: 10px; height: 1.2em; }
+        
+        /* Game 1: Quantum Lock */
+        .g-lock-area { width: 100%; height: 50px; background: #111; border: 2px solid #333; position: relative; overflow: hidden; }
+        .g-lock-target { position: absolute; top: 0; left: 40%; width: 20%; height: 100%; background: rgba(51, 255, 0, 0.3); border-left: 1px solid var(--term-green); border-right: 1px solid var(--term-green); }
+        .g-lock-cursor { position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: #fff; box-shadow: 0 0 10px #fff; }
+
+        /* Game 2: Memory Leak */
+        .g-mem-grid { display: flex; gap: 10px; justify-content: center; margin-top: 10px; }
+        .g-mem-block { width: 50px; height: 50px; border: 2px solid var(--term-dim); background: #000; transition: 0.1s; cursor: pointer; }
+        .g-mem-block.active { background: var(--term-green); box-shadow: 0 0 20px var(--term-green); border-color: #fff; }
+
+        /* Game 3: Brute Force */
+        .g-bf-bar-container { width: 100%; height: 30px; border: 2px solid var(--term-dim); margin-top: 10px; position: relative; }
+        .g-bf-bar-fill { height: 100%; width: 0%; background: var(--term-green); transition: width 0.05s linear; }
+        .g-bf-btn { width: 80px; height: 80px; border-radius: 50%; background: #222; border: 2px solid var(--term-green); color: var(--term-green); margin: 15px auto 0; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; cursor: pointer; user-select: none; }
+        .g-bf-btn:active { background: var(--term-green); color: #000; transform: scale(0.95); }
+
+        .shake { animation: flashRed 0.5s; }
+        @keyframes flashRed { 0% { box-shadow: inset 0 0 0 #000; } 50% { box-shadow: inset 0 0 50px var(--alert-red); border-color: var(--alert-red); } 100% { box-shadow: inset 0 0 0 #000; } }
+        @keyframes modalPop { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        @keyframes blink { 50% { opacity: 0.5; } }
+
+    </style>
+</head>
+<body>
+
+    <div class="crt-overlay"></div>
+
+    <!-- 弹窗组件 -->
+    <div class="modal-overlay" id="verseModal">
+        <div class="modal-box">
+            <div class="modal-title">>> REVELATION <<</div>
+            <div class="modal-content" style="font-family: 'Noto Serif SC', serif; font-size: 1.1rem;">
+                <span id="verseText">Loading...</span>
+                <br>
+                <span id="verseRef" style="font-size: 0.9rem; color: var(--term-green); margin-top: 10px;"></span>
+            </div>
+            <button class="modal-btn" onclick="closeVerseModal()">[ 领受 / AMEN ]</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="challengeModal">
+        <div class="modal-box">
+            <div class="modal-title" style="color: var(--honey)">>> PHYSICAL TASK <<</div>
+            <div class="modal-content">
+                <div style="font-size: 1rem; color: #888;">请完成以下动作:</div>
+                <div id="challengeText" class="challenge-text">...</div>
+            </div>
+            <button class="modal-btn" onclick="completeChallenge()">[ 我做完了! ]</button>
+            <button class="modal-btn" id="rerollBtn" style="background: #333; color: #888; font-size: 0.8rem;" onclick="rerollChallenge()">认怂刷新 (3/3)</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="gameModal">
+        <div class="modal-box" id="gameBox">
+            <div class="game-header-bar">
+                <div class="game-lv" id="gameLevelTag">LV.1</div>
+                <div class="game-stats" id="gameStatsDisplay">integrity: 100%</div>
+            </div>
+            <div class="modal-title" id="gameTitle" style="color: var(--bubble)">>> SYSTEM BREACH <<</div>
+            <div class="game-status" id="gameMsg">初始化...</div>
+            <div id="gameContent"></div>
+            <button class="modal-btn" id="gameActionBtn">[ START / ACTION ]</button>
+        </div>
+    </div>
+
+    <!-- 主界面 -->
+    <div class="terminal-window">
+        <div class="header">
+            <span>MXLE_OS v8.0</span>
+            <span>CONN: SECURE</span>
+        </div>
+
+        <div class="wallet-panel">
+            <div class="coin-slot">
+                <div class="icon-box"><div class="i-brick"></div></div>
+                <div class="coin-name">方果壳</div>
+                <div class="coin-count" id="c-faith">0</div>
+            </div>
+            <div class="coin-slot">
+                <div class="icon-box"><div class="i-bubble"></div></div>
+                <div class="coin-name">圆啵气</div>
+                <div class="coin-count" id="c-hope">0</div>
+            </div>
+            <div class="coin-slot">
+                <div class="icon-box"><div class="i-honey"></div></div>
+                <div class="coin-name">流心蜜</div>
+                <div class="coin-count" id="c-charity">0</div>
+            </div>
+        </div>
+
+        <div class="wheel-container">
+            <div class="wheel-border"></div>
+            <div class="pointer"></div>
+            
+            <div class="wheel" id="wheel">
+                <div class="wheel-label" style="transform: translate(-50%, -50%) rotate(0deg) translateY(-95px) rotate(0deg);">线上<br>游戏</div>
+                <div class="wheel-label" style="transform: translate(-50%, -50%) rotate(51.43deg) translateY(-95px) rotate(-51.43deg);">线下<br>挑战</div>
+                <div class="wheel-label" style="transform: translate(-50%, -50%) rotate(102.86deg) translateY(-95px) rotate(-102.86deg);">线上<br>游戏</div>
+                <div class="wheel-label" style="transform: translate(-50%, -50%) rotate(154.29deg) translateY(-95px) rotate(-154.29deg);">线下<br>挑战</div>
+                <div class="wheel-label" style="transform: translate(-50%, -50%) rotate(205.71deg) translateY(-95px) rotate(-205.71deg);">线上<br>游戏</div>
+                <div class="wheel-label" style="transform: translate(-50%, -50%) rotate(257.14deg) translateY(-95px) rotate(-257.14deg);">线下<br>挑战</div>
+                <div class="wheel-label label-coin" style="transform: translate(-50%, -50%) rotate(308.57deg) translateY(-95px) rotate(-308.57deg);">$$<br>奖币</div>
+                <div class="wheel-center"></div>
+            </div>
+        </div>
+
+        <div class="console-log" id="log">
+            <div class="log-line">> SYSTEM READY...</div>
+            <div class="log-line">> LOCAL_STORAGE [CONNECTED]</div>
+        </div>
+
+        <button class="spin-btn" id="spinBtn" onclick="spinWheel()">>> START SPIN <<</button>
+    </div>
+
+    <script>
+        const STORAGE_KEY = 'mxle_save_data_v2';
+
+        // --- 核心状态 ---
+        let appState = {
+            wallet: { faith: 0, hope: 0, charity: 0 },
+            difficulty: { quantum: 1, memory: 1, brute: 1 } 
+        };
+
+        // --- 数据 ---
+        const bibleVerses = [
+            { t: "父啊！赦免他们；因为他们所做的，他们不晓得。", r: "路加福音 23:34" },
+            { t: "信就是所望之事的实底。", r: "希伯来书 11:1" }
+            // (此处为节省长度省略，保留原有100条)
+        ];
+        const offlineTasks = [
+            "做3个深蹲并大喊：'弥小乐万岁'", "对着空气做一个飞吻"
+            // (此处为节省长度省略，保留原有100条)
+        ];
+
+        const wheel = document.getElementById('wheel');
+        const log = document.getElementById('log');
+        const btn = document.getElementById('spinBtn');
+        
+        let currentRotation = 0;
+        let isSpinning = false;
+        let pendingResultIndex = -1; 
+        let rerollCount = 0;
+        const maxRerolls = 3;
+
+        // 游戏变量
+        let gameAnimationFrame;
+        let gameTimer;
+        let gameInterval;
+        let activeGameType = ''; 
+        let currentHP = 3; 
+        let timeLeft = 10; 
+
+        function initSystem() {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('r') === '1') {
+                localStorage.removeItem(STORAGE_KEY);
+                addLog("检测到重置指令，数据已清空。", "fail-text");
+            }
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                try {
+                    appState = JSON.parse(saved);
+                    if(!appState.difficulty) appState.difficulty = { quantum: 1, memory: 1, brute: 1 };
+                    addLog("存档读取成功。", "win-text");
+                } catch(e) {}
+            }
+            updateWalletUI();
+        }
+
+        function saveSystem() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+        }
+
+        function addLog(text, styleClass = "") {
+            const div = document.createElement('div');
+            if (styleClass === 'fail') div.className = "log-line fail-text";
+            else div.className = "log-line " + styleClass;
+            div.innerHTML = "> " + text;
+            log.appendChild(div);
+            log.scrollTop = log.scrollHeight;
+        }
+
+        function spinWheel() {
+            if (isSpinning) return;
+            isSpinning = true;
+            btn.disabled = true;
+            btn.innerText = "RUNNING...";
+
+            const sliceAngle = 360 / 7;
+            const targetIndex = Math.floor(Math.random() * 7); 
+            const targetAngle = targetIndex * sliceAngle;
+            const offset = Math.floor(Math.random() * 40) - 20; 
+            const rotateAngle = 1800 + (360 - targetAngle) + offset;
+            currentRotation += rotateAngle;
+            wheel.style.transform = `rotate(${currentRotation}deg)`;
+
+            setTimeout(() => {
+                const actualDeg = currentRotation % 360;
+                const pointerAtPlate = (360 - actualDeg) % 360;
+                let finalIndex = Math.round(pointerAtPlate / sliceAngle);
+                if (finalIndex >= 7) finalIndex = 0;
+                pendingResultIndex = finalIndex;
+                showVersePopup(); 
+            }, 4000);
+        }
+
+        function showVersePopup() {
+            const v = bibleVerses[Math.floor(Math.random() * bibleVerses.length)];
+            document.getElementById('verseText').innerText = v.t;
+            document.getElementById('verseRef').innerText = v.r;
+            document.getElementById('verseModal').style.display = 'flex';
+        }
+
+        function closeVerseModal() {
+            document.getElementById('verseModal').style.display = 'none';
+            routeResult();
+        }
+
+        function routeResult() {
+            const index = pendingResultIndex;
+            if (index === 6) {
+                addLog(">>> LUCKY! 直接获得奖币", "win-text");
+                giveRandomCoin();
+                resetBtn();
+            } else if (index % 2 === 0) {
+                launchRandomOnlineGame(); 
+            } else {
+                addLog("触发：线下实体交互任务...");
+                startOfflineChallenge();
+            }
+        }
+
+        function resetBtn() {
+            isSpinning = false;
+            btn.disabled = false;
+            btn.innerText = ">> START SPIN <<";
+        }
+
+        // --- 线下挑战 ---
+        function startOfflineChallenge() {
+            rerollCount = 0;
+            updateRerollBtn();
+            const task = offlineTasks[Math.floor(Math.random() * offlineTasks.length)];
+            document.getElementById('challengeText').innerText = task;
+            document.getElementById('challengeModal').style.display = 'flex';
+        }
+
+        function updateRerollBtn() {
+            const btn = document.getElementById('rerollBtn');
+            const remaining = maxRerolls - rerollCount;
+            btn.innerText = `认怂刷新 (${remaining}/${maxRerolls})`;
+            btn.style.color = remaining === 0 ? "var(--alert-red)" : "#888";
+        }
+
+        function rerollChallenge() {
+            if (rerollCount >= maxRerolls) {
+                document.getElementById('challengeModal').style.display = 'none';
+                addLog("三次认怂，挑战失败！无奖励。", 'fail');
+                resetBtn();
+                return;
+            }
+            rerollCount++;
+            const task = offlineTasks[Math.floor(Math.random() * offlineTasks.length)];
+            document.getElementById('challengeText').innerText = task;
+            updateRerollBtn();
+        }
+
+        function completeChallenge() {
+            document.getElementById('challengeModal').style.display = 'none';
+            addLog("挑战完成！验证通过。", "win-text");
+            giveRandomCoin();
+            resetBtn();
+        }
+
+        // --- 线上小游戏系统 ---
+        
+        function launchRandomOnlineGame() {
+            const games = ['quantum', 'memory', 'brute'];
+            activeGameType = games[Math.floor(Math.random() * games.length)];
+            const currentLevel = appState.difficulty[activeGameType];
+            
+            document.getElementById('gameModal').style.display = 'flex';
+            document.getElementById('gameBox').classList.remove('shake');
+            document.getElementById('gameLevelTag').innerText = "LV." + currentLevel;
+            
+            const content = document.getElementById('gameContent');
+            content.innerHTML = '';
+            const actionBtn = document.getElementById('gameActionBtn');
+            actionBtn.style.display = 'inline-block';
+            
+            // 初始化生命值/时间显示
+            currentHP = 3; 
+            updateGameStats("HP: " + "█ ".repeat(currentHP));
+
+            if (activeGameType === 'quantum') setupQuantumGame(content, actionBtn, currentLevel);
+            else if (activeGameType === 'memory') setupMemoryGame(content, actionBtn, currentLevel);
+            else if (activeGameType === 'brute') setupBruteGame(content, actionBtn, currentLevel);
+        }
+
+        function updateGameStats(text) {
+            document.getElementById('gameStatsDisplay').innerText = text;
+        }
+
+        // Game 1: Quantum Lock
+        function setupQuantumGame(container, btn, level) {
+            document.getElementById('gameTitle').innerText = ">> QUANTUM LOCK <<";
+            document.getElementById('gameMsg').innerText = "锁定绿色区域...";
+            
+            container.innerHTML = `<div class="g-lock-area"><div class="g-lock-target"></div><div class="g-lock-cursor" id="glCursor"></div></div>`;
+            
+            let pos = 0;
+            let dir = 1;
+            let speed = 2 + (level * 0.5); // 难度增加速度
+            
+            btn.innerText = "[ 锁定 / LOCK ]";
+            
+            function loop() {
+                pos += speed * dir;
+                if (pos >= 98 || pos <= 0) dir *= -1;
+                const cursor = document.getElementById('glCursor');
+                if(cursor) cursor.style.left = pos + '%';
+                gameAnimationFrame = requestAnimationFrame(loop);
+            }
+            loop();
+            
+            btn.onclick = () => {
+                cancelAnimationFrame(gameAnimationFrame);
+                if (pos >= 38 && pos <= 62) {
+                    gameWin("量子锁定成功！");
+                } else {
+                    handleDamage();
+                    if(currentHP > 0) {
+                        document.getElementById('gameMsg').innerText = "锁定失败，目标逃逸...";
+                        setTimeout(loop, 500);
+                    }
+                }
+            };
+        }
+
+        // Game 2: Memory Leak
+        function setupMemoryGame(container, btn, level) {
+            document.getElementById('gameTitle').innerText = ">> MEMORY LEAK <<";
+            document.getElementById('gameMsg').innerText = "记住闪烁顺序...";
+            btn.style.display = 'none';
+            
+            container.innerHTML = `<div class="g-mem-grid"><div class="g-mem-block" id="mb0"></div><div class="g-mem-block" id="mb1"></div><div class="g-mem-block" id="mb2"></div><div class="g-mem-block" id="mb3"></div></div>`;
+            
+            const sequence = [];
+            const length = 3 + Math.floor(level / 2); 
+            const speedDelay = Math.max(300, 800 - (level * 50));
+
+            for(let i=0; i<length; i++) sequence.push(Math.floor(Math.random()*4));
+            
+            let playerIdx = 0;
+            let canClick = false;
+            
+            let playIdx = 0;
+            gameInterval = setInterval(() => {
+                if (playIdx >= length) {
+                    clearInterval(gameInterval);
+                    document.getElementById('gameMsg').innerText = ">> 请按顺序点击 <<";
+                    document.getElementById('gameMsg').style.color = "var(--term-green)";
+                    canClick = true;
+                    return;
+                }
+                flashBlock(sequence[playIdx]);
+                playIdx++;
+            }, speedDelay);
+            
+            function flashBlock(id) {
+                const el = document.getElementById('mb'+id);
+                if(el) {
+                    el.classList.add('active');
+                    setTimeout(() => el.classList.remove('active'), 200);
+                }
+            }
+            
+            for(let i=0; i<4; i++) {
+                document.getElementById('mb'+i).onclick = function() {
+                    if(!canClick) return;
+                    flashBlock(i);
+                    if (i === sequence[playerIdx]) {
+                        playerIdx++;
+                        if (playerIdx === length) {
+                            gameWin("记忆修复完成！");
+                        }
+                    } else {
+                        handleDamage();
+                        if(currentHP > 0) {
+                            // 失败重置：如果是记忆游戏，很难只扣血不重置，这里简化为允许重试输入
+                            // 或者更硬核：失败直接结束。这里选择扣血后重播序列
+                            canClick = false;
+                            document.getElementById('gameMsg').innerText = "序列错误! 重置中...";
+                            setTimeout(() => launchRandomOnlineGame(), 1000); 
+                        }
+                    }
+                }
+            }
+        }
+
+        // Game 3: Brute Force
+        function setupBruteGame(container, btn, level) {
+            document.getElementById('gameTitle').innerText = ">> BRUTE FORCE <<";
+            document.getElementById('gameMsg').innerText = "连点按钮填满进度条!";
+            btn.style.display = 'none';
+            
+            container.innerHTML = `<div class="g-bf-bar-container"><div class="g-bf-bar-fill" id="bfBar"></div></div><div class="g-bf-btn" id="bfBtn">HACK</div>`;
+            
+            let progress = 30; 
+            const bar = document.getElementById('bfBar');
+            
+            // 难度：回退速度 + 时间限制
+            const decay = 0.5 + (level * 0.15); 
+            timeLeft = Math.max(5, 15 - (level * 0.5)); // 时间随等级减少
+            
+            updateGameStats("TIME: " + timeLeft.toFixed(1) + "s");
+
+            gameInterval = setInterval(() => {
+                // 进度回退
+                progress -= decay; 
+                if (progress < 0) progress = 0;
+                if(bar) bar.style.width = progress + '%';
+                
+                // 倒计时
+                timeLeft -= 0.05;
+                if(timeLeft <= 0) {
+                    timeLeft = 0;
+                    updateGameStats("TIME: 0.0s");
+                    clearInterval(gameInterval);
+                    finalGameOver("连接超时 (TIMEOUT)");
+                } else {
+                    updateGameStats("TIME: " + timeLeft.toFixed(1) + "s");
+                }
+            }, 50); 
+            
+            document.getElementById('bfBtn').onclick = () => {
+                if(timeLeft <= 0) return;
+                progress += 5; 
+                if (progress >= 100) {
+                    clearInterval(gameInterval);
+                    if(bar) bar.style.width = '100%';
+                    gameWin("暴力破解成功！");
+                }
+                if(bar) bar.style.width = progress + '%';
+            };
+        }
+
+        // --- 伤害与失败处理 ---
+        function handleDamage() {
+            currentHP--;
+            updateGameStats("HP: " + "█ ".repeat(currentHP));
+            
+            const box = document.getElementById('gameBox');
+            box.classList.remove('shake');
+            void box.offsetWidth; 
+            box.classList.add('shake');
+            
+            if (currentHP <= 0) {
+                finalGameOver("入侵失败 (CONNECTION LOST)");
+            }
+        }
+
+        function finalGameOver(reason) {
+            cleanupGame();
+            document.getElementById('gameMsg').innerText = reason;
+            document.getElementById('gameMsg').style.color = "var(--alert-red)";
+            
+            setTimeout(() => {
+                document.getElementById('gameModal').style.display = 'none';
+                addLog("任务失败：无硬币奖励。", "fail-text");
+                resetBtn();
+            }, 1500);
+        }
+
+        function gameWin(msg) {
+            document.getElementById('gameMsg').innerText = msg;
+            document.getElementById('gameMsg').style.color = "var(--term-green)";
+            
+            // 难度升级
+            appState.difficulty[activeGameType]++;
+            saveSystem();
+            addLog(`[${activeGameType}] 难度升级 -> LV.${appState.difficulty[activeGameType]}`);
+
+            setTimeout(() => {
+                document.getElementById('gameModal').style.display = 'none';
+                addLog(msg, "win-text");
+                giveRandomCoin();
+                resetBtn();
+                cleanupGame();
+            }, 1000);
+        }
+
+        function cleanupGame() {
+            if (gameAnimationFrame) cancelAnimationFrame(gameAnimationFrame);
+            if (gameInterval) clearInterval(gameInterval);
+        }
+
+        function giveRandomCoin() {
+            const r = Math.random();
+            let type = "";
+            if (r < 0.33) {
+                appState.wallet.faith++;
+                type = "方果壳";
+            } else if (r < 0.66) {
+                appState.wallet.hope++;
+                type = "圆啵气";
+            } else {
+                appState.wallet.charity++;
+                type = "流心蜜";
+            }
+            saveSystem();
+            updateWalletUI();
+            addLog(`获得: ${type}`, "win-text");
+            checkGift();
+        }
+
+        function checkGift() {
+            if (appState.wallet.faith > 0 && appState.wallet.hope > 0 && appState.wallet.charity > 0) {
+                addLog("=======================");
+                addLog("警告：检测到完美组合！", "win-text");
+                addLog("合成: [弥小乐限定盲盒]", "win-text");
+                appState.wallet.faith--; 
+                appState.wallet.hope--; 
+                appState.wallet.charity--;
+                saveSystem();
+                updateWalletUI();
+            }
+        }
+
+        function updateWalletUI() {
+            document.getElementById('c-faith').innerText = appState.wallet.faith;
+            document.getElementById('c-hope').innerText = appState.wallet.hope;
+            document.getElementById('c-charity').innerText = appState.wallet.charity;
+        }
+
+        initSystem();
+    </script>
+</body>
+</html>

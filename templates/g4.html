@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>2048 Sky Symphony: Evolution</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@700;900&display=swap');
+
+        :root {
+            --board-size: min(90vw, 450px);
+            --tile-gap: 10px;
+            --tile-size: calc((var(--board-size) - (var(--tile-gap) * 5)) / 4);
+            --bg-transition: background 2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body { 
+            margin: 0; overflow: hidden; font-family: 'Inter', sans-serif; 
+            height: 100vh; background: #000; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; transition: var(--bg-transition);
+            touch-action: none; /* 브라우저 기본 스크롤/바운스 방지 */
+        }
+
+        canvas { position: fixed; inset: 0; pointer-events: none; }
+        #sky-canvas { z-index: 1; }
+        #global-weather { z-index: 5; }
+
+        /* UI Panel */
+        #ui-panel {
+            position: relative; z-index: 100; margin-bottom: 20px;
+            background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(15px);
+            padding: 15px 25px; border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.2); 
+            display: flex; gap: 20px; color: white; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .ui-item { display: flex; flex-direction: column; align-items: center; }
+        .ui-label { font-size: 9px; font-weight: 900; opacity: 0.6; letter-spacing: 1px; margin-bottom: 2px; }
+        .ui-val { font-size: 18px; font-weight: 900; text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+
+        /* Game Board */
+        #game-container { position: relative; z-index: 10; width: var(--board-size); height: var(--board-size); }
+        #board {
+            position: relative; width: 100%; height: 100%; 
+            background: rgba(255, 255, 255, 0.1); 
+            backdrop-filter: blur(20px) saturate(1.5);
+            border-radius: 24px; padding: var(--tile-gap); display: grid;
+            grid-template-columns: repeat(4, 1fr); gap: var(--tile-gap); box-sizing: border-box; 
+            border: 1.5px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+        }
+
+        /* Ice Shards (Snow Weather Effect) */
+        .ice-shards {
+            position: absolute; width: var(--tile-size); height: var(--tile-size); 
+            background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.4), rgba(180, 210, 255, 0.2));
+            backdrop-filter: blur(6px); border-radius: 12px; z-index: 80; 
+            pointer-events: none; transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 1px solid rgba(255,255,255,0.4); opacity: 0; transform: scale(0.8);
+        }
+
+        /* Tiles */
+        .tile {
+            position: absolute; width: var(--tile-size); height: var(--tile-size); 
+            display: flex; align-items: center; justify-content: center;
+            font-size: calc(var(--tile-size) * 0.4); font-weight: 900; border-radius: 12px; 
+            transition: all 0.15s ease-out, left 0.15s ease-out, top 0.15s ease-out;
+            color: #444; text-shadow: 0 1px 2px rgba(255,255,255,0.3);
+            animation: pop 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes pop {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        body.night-mode .tile { color: #fff; text-shadow: 0 2px 5px rgba(0,0,0,0.5); }
+
+        /* Tile Colors */
+        .v2 { background: #eee4da; }
+        .v4 { background: #ede0c8; }
+        .v8 { background: #f2b179; color: #fff !important; }
+        .v16 { background: #f59563; color: #fff !important; }
+        .v32 { background: #f67c5f; color: #fff !important; }
+        .v64 { background: #f65e3b; color: #fff !important; }
+        .v128 { background: #edcf72; font-size: calc(var(--tile-size) * 0.35); }
+        .v256 { background: #edcc61; }
+        .v512 { background: #edc850; }
+        .v1024 { background: #33d9b2; font-size: calc(var(--tile-size) * 0.3); }
+        .v2048 { background: #ff5252; font-size: calc(var(--tile-size) * 0.3); }
+
+        body.night-mode .v128 { box-shadow: 0 0 15px #edcf72; }
+        body.night-mode .v1024 { box-shadow: 0 0 20px #33d9b2; }
+        body.night-mode .v2048 { box-shadow: 0 0 25px #ff5252; }
+
+        #sun, #moon { position: fixed; width: 120px; height: 120px; border-radius: 50%; z-index: 2; filter: blur(40px); transition: opacity 2s; }
+    </style>
+</head>
+<body>
+    <canvas id="sky-canvas"></canvas>
+    <canvas id="global-weather"></canvas>
+    <div id="sun"></div><div id="moon"></div>
+
+    <div id="ui-panel">
+        <div class="ui-item"><span class="ui-label">SEASON</span><span id="season-txt" class="ui-val">-</span></div>
+        <div class="ui-item"><span class="ui-label">WEATHER</span><span id="weather-txt" class="ui-val" style="color:#00ff88">CLEAR</span></div>
+        <div class="ui-item"><span class="ui-label">SCORE</span><span id="score" class="ui-val">0</span></div>
+    </div>
+
+    <div id="game-container">
+        <div id="board">
+            <!-- Ice Shards will be generated here by JS -->
+            <canvas id="board-rain-canvas" style="position:absolute; inset:0; z-index:90; pointer-events:none;"></canvas>
+        </div>
+    </div>
+
+    <script>
+        const skyCtx = document.getElementById('sky-canvas').getContext('2d');
+        const globalCtx = document.getElementById('global-weather').getContext('2d');
+        const boardRainCtx = document.getElementById('board-rain-canvas').getContext('2d');
+        
+        let board = Array(4).fill().map(() => Array(4).fill(0));
+        let score = 0, lastUnlockedCount = 0, tick = 0, weather = 'clear';
+        let globalParts = [], boardDrops = [], stars = [];
+
+        const cycle = 8000;
+        const seasons = [
+            {n:"SPRING", b:"linear-gradient(135deg, #FFDEE9 0%, #B5FFFC 100%)"}, 
+            {n:"SUMMER", b:"linear-gradient(135deg, #74b9ff 0%, #00d2ff 100%)"}, 
+            {n:"AUTUMN", b:"linear-gradient(135deg, #ff9f43 0%, #ff6b6b 100%)"}, 
+            {n:"WINTER", b:"linear-gradient(135deg, #dff9fb 0%, #95afc0 100%)"}
+        ];
+        
+        let randomSeasonIndex = Math.floor(Math.random() * 4);
+        tick = randomSeasonIndex * (cycle * 2); 
+
+        function init() {
+            const w = window.innerWidth, h = window.innerHeight;
+            skyCtx.canvas.width = globalCtx.canvas.width = w;
+            skyCtx.canvas.height = globalCtx.canvas.height = h;
+            
+            const bRect = document.getElementById('board').getBoundingClientRect();
+            boardRainCtx.canvas.width = bRect.width;
+            boardRainCtx.canvas.height = bRect.height;
+
+            stars = Array(100).fill().map(() => ({ x: Math.random()*w, y: Math.random()*h, s: Math.random()*1.5, p: Math.random()*Math.PI }));
+            
+            // Re-generate Ice Shards for responsive sizing
+            const boardEl = document.getElementById('board');
+            document.querySelectorAll('.ice-shards').forEach(el => el.remove());
+            for(let i=0; i<16; i++) {
+                const el = document.createElement('div');
+                el.id = `ice-${i}`;
+                el.className = 'ice-shards';
+                const r = Math.floor(i / 4), c = i % 4;
+                const gap = "var(--tile-gap)";
+                const size = "var(--tile-size)";
+                el.style.left = `calc(${gap} + ${c} * (${size} + ${gap}))`;
+                el.style.top = `calc(${gap} + ${r} * (${size} + ${gap}))`;
+                boardEl.appendChild(el);
+            }
+            render();
+        }
+
+        // Swipe Controls
+        let touchStartX = 0, touchStartY = 0;
+        window.addEventListener('touchstart', e => {
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+        }, { passive: true });
+
+        window.addEventListener('touchend', e => {
+            const dx = e.changedTouches[0].clientX - touchStartX;
+            const dy = e.changedTouches[0].clientY - touchStartY;
+            const absX = Math.abs(dx), absY = Math.abs(dy);
+            if (Math.max(absX, absY) > 30) {
+                if (absX > absY) move(dx > 0 ? 'right' : 'left');
+                else move(dy > 0 ? 'down' : 'up');
+            }
+        }, { passive: true });
+
+        function setWeather(newWeather) {
+            weather = newWeather;
+            document.getElementById('weather-txt').innerText = weather.toUpperCase();
+            if(weather === 'snow') {
+                for(let i=0; i<16; i++) {
+                    const el = document.getElementById(`ice-${i}`);
+                    el.style.opacity = "1"; el.style.transform = "scale(1)";
+                }
+                lastUnlockedCount = Math.floor(score / 150);
+            } else {
+                for(let i=0; i<16; i++) {
+                    const el = document.getElementById(`ice-${i}`);
+                    el.style.opacity = "0"; el.style.transform = "scale(0.8) rotate(10deg)";
+                }
+            }
+        }
+
+        function animate() {
+            tick++;
+            const progress = (tick % (cycle/2)) / (cycle/2);
+            const isDay = (tick % cycle) < (cycle/2);
+            const cX = progress * window.innerWidth * 1.5 - 200;
+            const cY = Math.sin(progress * Math.PI) * 200 + 100;
+
+            if (isDay) document.body.classList.remove('night-mode');
+            else document.body.classList.add('night-mode');
+
+            const sIdx = Math.floor(tick / (cycle * 2)) % 4;
+            document.getElementById('season-txt').innerText = seasons[sIdx].n;
+
+            skyCtx.clearRect(0,0,innerWidth,innerHeight);
+            document.body.style.background = isDay ? seasons[sIdx].b : "#0a0a1a";
+            
+            const sunMoon = isDay ? document.getElementById('sun') : document.getElementById('moon');
+            const other = isDay ? document.getElementById('moon') : document.getElementById('sun');
+            sunMoon.style.opacity = 0.8; 
+            sunMoon.style.left = `${cX}px`; sunMoon.style.top = `${cY}px`;
+            sunMoon.style.background = isDay ? "radial-gradient(#fff7ad, #feca57)" : "radial-gradient(#f5f6fa, #dcdde1)";
+            other.style.opacity = 0;
+
+            if(!isDay) {
+                stars.forEach(s => {
+                    skyCtx.fillStyle = `rgba(255,255,255,${0.3 + Math.sin(tick/40 + s.p)*0.5})`;
+                    skyCtx.beginPath(); skyCtx.arc(s.x, s.y, s.s, 0, Math.PI*2); skyCtx.fill();
+                });
+            }
+
+            globalCtx.clearRect(0,0,innerWidth,innerHeight);
+            boardRainCtx.clearRect(0,0,boardRainCtx.canvas.width,boardRainCtx.canvas.height);
+            
+            if(tick % 1500 === 0) setWeather(['clear', 'rain', 'snow'][Math.floor(Math.random()*3)]);
+
+            if(weather !== 'clear') {
+                if(globalParts.length < 100) {
+                    globalParts.push({ x: Math.random()*innerWidth, y: -50, v: weather==='rain' ? 12 : 1.5, size: Math.random()*2+1, drift: Math.random()-0.5 });
+                }
+                globalParts.forEach((p, i) => {
+                    p.y += p.v; p.x += (p.drift || 0);
+                    if(weather === 'snow') {
+                        globalCtx.fillStyle = "rgba(255,255,255,0.7)";
+                        globalCtx.beginPath(); globalCtx.arc(p.x, p.y, p.size, 0, Math.PI*2); globalCtx.fill();
+                    } else {
+                        globalCtx.strokeStyle = "rgba(174, 198, 239, 0.4)";
+                        globalCtx.lineWidth = 1.5;
+                        globalCtx.beginPath(); globalCtx.moveTo(p.x, p.y); globalCtx.lineTo(p.x, p.y + 25); globalCtx.stroke();
+                    }
+                    if(p.y > innerHeight) globalParts.splice(i, 1);
+                });
+
+                if(weather === 'rain') {
+                    if(boardDrops.length < 20 && Math.random() > 0.95) {
+                        boardDrops.push({ x: Math.random()*boardRainCtx.canvas.width, y: Math.random()*boardRainCtx.canvas.height, r: 2, o: 0, s: 0 });
+                    }
+                    boardDrops.forEach((d, i) => {
+                        d.o += 0.02; d.s += 0.1; d.y += d.s;
+                        boardRainCtx.fillStyle = `rgba(255,255,255,${0.4 - d.o})`;
+                        boardRainCtx.beginPath(); boardRainCtx.arc(d.x, d.y, d.r + d.s, 0, Math.PI*2); boardRainCtx.fill();
+                        if(d.o > 0.4 || d.y > boardRainCtx.canvas.height) boardDrops.splice(i, 1);
+                    });
+                }
+            }
+            requestAnimationFrame(animate);
+        }
+
+        function move(dir) {
+            let old = JSON.stringify(board);
+            for (let i = 0; i < 4; i++) {
+                let arr = (dir==='left'||dir==='right') ? [...board[i]] : [board[0][i], board[1][i], board[2][i], board[3][i]];
+                if (dir==='right'||dir==='down') arr.reverse();
+                let res = (r => {
+                    let a = r.filter(v => v !== 0);
+                    for(let i=0; i<a.length-1; i++) if(a[i]===a[i+1]){a[i]*=2; score+=a[i]; a.splice(i+1,1);}
+                    while(a.length<4) a.push(0); return a;
+                })(arr);
+                if (dir==='right'||dir==='down') res.reverse();
+                for (let j=0; j<4; j++) (dir==='left'||dir==='right') ? board[i][j] = res[j] : board[j][i] = res[j];
+            }
+            if (old !== JSON.stringify(board)) { 
+                spawn(); render(); 
+                if(weather === 'snow') {
+                    const currentUnlock = Math.floor(score / 150);
+                    if(currentUnlock > lastUnlockedCount) {
+                        const locked = [];
+                        for(let i=0; i<16; i++) {
+                            const el = document.getElementById(`ice-${i}`);
+                            if(el && el.style.opacity === "1") locked.push(i);
+                        }
+                        if(locked.length) {
+                            const target = locked[Math.floor(Math.random()*locked.length)];
+                            const el = document.getElementById(`ice-${target}`);
+                            el.style.opacity = "0"; el.style.transform = "scale(1.2) rotate(-15deg)";
+                        }
+                        lastUnlockedCount = currentUnlock;
+                    }
+                }
+            }
+        }
+
+        function spawn() {
+            let empty = [];
+            for(let r=0; r<4; r++) for(let c=0; c<4; c++) if(board[r][c] === 0) empty.push({r, c});
+            if(empty.length) {
+                let {r, c} = empty[Math.floor(Math.random() * empty.length)];
+                board[r][c] = Math.random() < 0.9 ? 2 : 4;
+            }
+        }
+
+        function render() {
+            const boardEl = document.getElementById('board');
+            document.querySelectorAll('.tile').forEach(t => t.remove());
+            board.forEach((row, r) => { row.forEach((val, c) => {
+                if(val !== 0) {
+                    const t = document.createElement('div'); 
+                    t.className = `tile v${val}`;
+                    t.innerText = val;
+                    const gap = "var(--tile-gap)";
+                    const size = "var(--tile-size)";
+                    t.style.left = `calc(${gap} + ${c} * (${size} + ${gap}))`;
+                    t.style.top = `calc(${gap} + ${r} * (${size} + ${gap}))`;
+                    boardEl.appendChild(t);
+                }
+            })});
+            document.getElementById('score').innerText = score;
+        }
+
+        window.addEventListener('keydown', e => { 
+            if (e.key.includes("Arrow")) { 
+                e.preventDefault(); 
+                move(e.key.replace("Arrow", "").toLowerCase().replace("up", "up").replace("down", "down")); 
+            } 
+        });
+
+        window.onresize = init;
+        init(); animate(); spawn(); spawn(); render();
+    </script>
+</body>
+</html>

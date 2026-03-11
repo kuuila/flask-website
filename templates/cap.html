@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>拜占庭帽神：教堂门口的试炼</title>
+    <style>
+        :root {
+            --gold: #d4af37;
+            --crimson: #800020;
+            --parchment: #fdf5e6;
+            --dark: #2c3e50;
+            --comic-border: 4px solid #000;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #2b2b2b;
+            /* 拜占庭马赛克背景 */
+            background-image: 
+                linear-gradient(45deg, #333 25%, transparent 25%), 
+                linear-gradient(-45deg, #333 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, #333 75%), 
+                linear-gradient(-45deg, transparent 75%, #333 75%);
+            background-size: 20px 20px;
+            font-family: 'Comic Sans MS', 'Chalkboard SE', 'Microsoft YaHei', sans-serif;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            color: var(--dark);
+            user-select: none;
+        }
+
+        /* 顶部状态栏 - 金色卷轴风 */
+        header {
+            background: var(--gold);
+            border-bottom: var(--comic-border);
+            padding: 10px;
+            display: flex;
+            justify-content: space-between;
+            font-weight: 900;
+            box-shadow: 0 5px 0 #8a6e1e;
+            z-index: 10;
+            font-family: 'Georgia', serif; /* 严肃字体 */
+        }
+
+        /* 游戏主区域 */
+        #game-area {
+            flex: 1;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            /* 漫画集中线背景 */
+            background: repeating-conic-gradient(
+                from 0deg, 
+                rgba(255,255,255,0.1) 0deg 10deg, 
+                transparent 10deg 20deg
+            );
+        }
+
+        /* 纠察队大妈 NPC - 浮夸风格 */
+        #npc-zone {
+            position: absolute;
+            top: 10px;
+            right: 5px;
+            text-align: right;
+            z-index: 5;
+            width: 160px;
+        }
+        .npc-avatar {
+            font-size: 60px;
+            filter: drop-shadow(3px 3px 0 #000);
+            position: relative;
+        }
+        /* 大妈的“红袖章光环” */
+        .npc-avatar::before {
+            content: '';
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 70px; height: 70px;
+            background: radial-gradient(circle, var(--crimson) 60%, transparent 70%);
+            border-radius: 50%;
+            z-index: -1;
+            opacity: 0.8;
+        }
+        .npc-bubble {
+            background: #fff;
+            border: 3px solid #000;
+            padding: 8px;
+            border-radius: 20px 0 20px 20px;
+            font-size: 13px;
+            color: #000;
+            font-weight: 900;
+            box-shadow: 4px 4px 0 rgba(0,0,0,0.5);
+            margin-bottom: 5px;
+        }
+
+        /* 拜占庭圣像卡片 */
+        #card-container {
+            width: 280px;
+            height: 380px;
+            perspective: 1000px;
+            position: relative;
+        }
+
+        .card {
+            width: 100%;
+            height: 100%;
+            background: var(--parchment);
+            /* 拱门形状 */
+            border-radius: 140px 140px 10px 10px;
+            box-shadow: 
+                inset 0 0 0 5px var(--gold),
+                inset 0 0 0 8px var(--crimson),
+                0 15px 0 rgba(0,0,0,0.5); /* 厚重立体感 */
+            border: 4px solid #000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end; /* 底部对齐 */
+            position: absolute;
+            transition: transform 0.3s ease;
+            overflow: hidden;
+        }
+
+        /* 圣像光环 */
+        .halo {
+            position: absolute;
+            top: 40px;
+            width: 180px;
+            height: 180px;
+            background: radial-gradient(circle, #f1c40f 50%, #e67e22 70%);
+            border-radius: 50%;
+            border: 2px dashed #000; /* 漫画风光环 */
+            z-index: 1;
+            animation: spin 10s linear infinite;
+        }
+
+        .visitor-emoji {
+            font-size: 110px;
+            z-index: 2;
+            margin-top: 50px;
+            filter: drop-shadow(5px 5px 0 rgba(0,0,0,0.2));
+            transform: scale(1.1);
+        }
+        
+        .card-info {
+            background: #fff;
+            width: 100%;
+            height: 110px;
+            border-top: 4px solid #000;
+            z-index: 3;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 0;
+        }
+
+        .visitor-desc {
+            font-size: 20px;
+            font-weight: 900;
+            text-align: center;
+            color: var(--crimson);
+        }
+        .visitor-hat-type {
+            font-size: 14px;
+            color: #555;
+            margin-top: 5px;
+            font-style: italic;
+        }
+        
+        /* 漫画拟声词特效 */
+        .pow-effect {
+            position: absolute;
+            font-size: 40px;
+            font-weight: 900;
+            color: red;
+            text-shadow: 2px 2px 0 #fff, -2px -2px 0 #000;
+            z-index: 20;
+            pointer-events: none;
+            opacity: 0;
+        }
+
+        /* 操作按钮 */
+        .controls {
+            display: flex;
+            width: 100%;
+            height: 90px;
+            background: #fff;
+            border-top: var(--comic-border);
+        }
+        .btn {
+            flex: 1;
+            border: none;
+            font-size: 20px;
+            font-weight: 900;
+            cursor: pointer;
+            transition: all 0.1s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-transform: uppercase;
+        }
+        .btn-keep {
+            background: #e8f5e9;
+            color: #2e7d32;
+            border-right: 2px solid #000;
+        }
+        .btn-keep:active { background: #c8e6c9; transform: translateY(2px); }
+        
+        .btn-remove {
+            background: #ffebee;
+            color: #c62828;
+        }
+        .btn-remove:active { background: #ffcdd2; transform: translateY(2px); }
+
+        /* 结束界面 */
+        .screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(43, 43, 43, 0.95);
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            text-align: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .hidden { display: none; }
+        .start-btn {
+            padding: 15px 40px;
+            background: var(--gold);
+            color: #000;
+            border: 4px solid #000;
+            box-shadow: 5px 5px 0 #fff;
+            font-size: 22px;
+            font-weight: 900;
+            cursor: pointer;
+            margin-top: 30px;
+        }
+        .start-btn:active { box-shadow: 2px 2px 0 #fff; transform: translate(3px, 3px); }
+
+        /* 动画 */
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        @keyframes flyRight { 
+            0% { transform: rotate(0); }
+            100% { transform: translateX(150%) rotate(45deg); opacity: 0; }
+        }
+        @keyframes flyLeft { 
+            0% { transform: rotate(0); }
+            100% { transform: translateX(-150%) rotate(-45deg); opacity: 0; }
+        }
+        @keyframes boom {
+            0% { transform: scale(0.5); opacity: 0; }
+            50% { transform: scale(1.5); opacity: 1; }
+            100% { transform: scale(1.2); opacity: 0; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- 开始界面 -->
+    <div id="start-screen" class="screen">
+        <h1 style="font-size: 30px; color: var(--gold); text-shadow: 3px 3px 0 #000;">🏛️ 拜占庭帽神 🧢</h1>
+        <p style="font-size: 16px; line-height: 1.5; max-width: 350px;">
+            欢迎来到<b>“圣君堂”门口</b>。<br>
+            你是新来的礼仪官。<br>
+            你的任务：<span style="color:var(--gold)">把不该戴帽子的男人头皮露出来</span>，
+            但要保护女士和特殊职业的尊严。<br><br>
+            ⚠️ 小心：旁边的大妈是<b>“教条纠察队”</b>队长，她希望连教皇都剃光头。
+        </p>
+        <button class="start-btn" onclick="game.start()">开始接待 (随机抽查)</button>
+    </div>
+
+    <!-- 结算界面 -->
+    <div id="end-screen" class="screen hidden">
+        <h1 id="end-title">试炼结束</h1>
+        <div style="font-size: 80px; margin: 10px;" id="end-emoji">🗿</div>
+        <p id="end-score" style="font-size: 28px; color: var(--gold);"></p>
+        <div id="end-comment" style="font-size: 16px; margin: 20px;"></div>
+        <button class="start-btn" onclick="location.reload()">接待下一批</button>
+    </div>
+
+    <header>
+        <span>DAY 2025</span>
+        <span id="score-display">功德: 0</span>
+        <span id="timer-display">剩余: 10</span>
+    </header>
+
+    <div id="game-area">
+        <!-- 纠察队大妈 -->
+        <div id="npc-zone">
+            <div class="npc-bubble" id="npc-text">我看谁敢戴帽子！</div>
+            <div class="npc-avatar">👺🗯️</div>
+        </div>
+
+        <!-- 拟声词 -->
+        <div id="pow-container"></div>
+
+        <!-- 卡片容器 -->
+        <div id="card-container"></div>
+    </div>
+
+    <div class="controls">
+        <button class="btn btn-keep" onclick="game.handleChoice(true)">
+            ⭕ 准许进入<br><span style="font-size:12px">Keep Hat</span>
+        </button>
+        <button class="btn btn-remove" onclick="game.handleChoice(false)">
+            💢 给我摘了<br><span style="font-size:12px">Remove Hat</span>
+        </button>
+    </div>
+
+<script>
+    /**
+     * 数据结构说明：
+     * action: 'remove' (必须摘 - 通常男士/休闲), 'keep' (保留 - 女士/宗教/特殊功能)
+     * failMsg: 选错后的讽刺吐槽
+     */
+    const characterPool = [
+        // === 必须摘帽组 (Men / Secular) ===
+        { name: "西部牛仔", emoji: "🤠", hat: "Stetson牛仔帽", action: "remove", failMsg: "这是教堂，不是狂野西部！" },
+        { name: "交警队长", emoji: "👮‍♂️", hat: "警帽", action: "remove", failMsg: "公职人员进圣堂更要脱帽示敬！" },
+        { name: "建筑工老王", emoji: "👷", hat: "黄色安全帽", action: "remove", failMsg: "教堂还没塌呢，摘了！" },
+        { name: "魔术师", emoji: "🎩", hat: "高筒礼帽", action: "remove", failMsg: "不管是变兔子还是变戏法，礼帽得摘！" },
+        { name: "嘻哈Rapper", emoji: "🧢", hat: "反戴棒球帽", action: "remove", failMsg: "Yo! 上帝不看你的Flow，看你的头！" },
+        { name: "私人侦探", emoji: "🕵️‍♂️", hat: "猎鹿帽", action: "remove", failMsg: "福尔摩斯先生，这里不需要伪装。" },
+        { name: "刚毕业的大学生", emoji: "👨‍🎓", hat: "学士帽", action: "remove", failMsg: "把荣耀归给神，把帽子拿手里。" },
+        { name: "军队上校", emoji: "🪖", hat: "钢盔", action: "remove", failMsg: "停火区！卸下武装，脱下头盔！" },
+        { name: "摇滚老炮", emoji: "🎸", hat: "头巾", action: "remove", failMsg: "保罗说男人不蒙头，摇滚也不行。" },
+        { name: "外卖小哥", emoji: "🛵", hat: "头盔", action: "remove", failMsg: "辛苦了，但进门请把头盔放车上。" },
+        { name: "海盗船长", emoji: "🏴‍☠️", hat: "三角帽", action: "remove", failMsg: "杰克船长，这里没有朗姆酒，摘帽子！" },
+        { name: "圣诞老人", emoji: "🎅", hat: "圣诞帽", action: "remove", failMsg: "虽然你是圣尼古拉，但进堂还是要脱帽的。" },
+        { name: "法国大厨", emoji: "👨‍🍳", hat: "高筒厨师帽", action: "remove", failMsg: "上帝想看你的发际线，不是厨艺。" },
+        { name: "维京海盗", emoji: "🛶", hat: "牛角盔", action: "remove", failMsg: "把你那两个角收起来！" },
+        { name: "甚至不是人", emoji: "👽", hat: "太空头盔", action: "remove", failMsg: "外星人也要守地球的规矩！" },
+        { name: "画家", emoji: "🎨", hat: "贝雷帽", action: "remove", failMsg: "艺术气息太重了，脱掉脱掉。" },
+        { name: "普通游客", emoji: "📸", hat: "防晒帽", action: "remove", failMsg: "这是室内！没有太阳！" },
+        { name: "正在洗澡的人", emoji: "🧖‍♂️", hat: "浴帽", action: "remove", failMsg: "等等...这人为什么戴浴帽来教堂？" },
+        { name: "萨克斯手", emoji: "🎷", hat: "爵士帽", action: "remove", failMsg: "爵士乐很酷，但这里是唱诗班主场。" },
+        { name: "派对达人", emoji: "🥳", hat: "生日尖帽", action: "remove", failMsg: "今天不是你生日，是耶稣的主场。" },
+        { name: "隐形富豪", emoji: "🕶️", hat: "低调鸭舌帽", action: "remove", failMsg: "再低调也不能对神不敬。" },
+        { name: "消防员", emoji: "👨‍🚒", hat: "消防盔", action: "remove", failMsg: "没有着火，请脱帽致敬。" },
+        { name: "飞行员", emoji: "👨‍✈️", hat: "机长帽", action: "remove", failMsg: "Captain，这里由上帝掌舵。" },
+
+        // === 必须保留组 (Women / Religious / Cultural / Absurd) ===
+        { name: "待嫁新娘", emoji: "👰", hat: "圣洁头纱", action: "keep", failMsg: "疯了吗？你把新娘搞哭了！" },
+        { name: "英国女王", emoji: "👸", hat: "皇室礼帽", action: "keep", failMsg: "不！那是皇家礼仪！你要引发外交事故吗？" },
+        { name: "修女嬷嬷", emoji: "🧕", hat: "修女头巾", action: "keep", failMsg: "那是圣召的标志！不能摘！" },
+        { name: "犹太拉比", emoji: "🕍", hat: "Kippah小圆帽", action: "keep", failMsg: "对犹太人来说，戴帽才是敬畏神！" },
+        { name: "正教主教", emoji: "👑", hat: "主教冠(Mitre)", action: "keep", failMsg: "那是神权的象征！你这是亵渎！" },
+        { name: "名媛贵妇", emoji: "👒", hat: "宽檐礼帽", action: "keep", failMsg: "女士戴礼帽是端庄的表现，懂不懂？" },
+        { name: "锡克教徒", emoji: "👳", hat: "Dastar头巾", action: "keep", failMsg: "那是信仰的一部分，不能强迫摘除！" },
+        { name: "教皇本笃", emoji: "🇻🇦", hat: "绒帽(Camauro)", action: "keep", failMsg: "你连教皇都敢动？大妈都佩服你。" },
+        { name: "深海潜水员", emoji: "🤿", hat: "氧气面罩", action: "keep", failMsg: "摘了他会死的！虽然这里没水..." },
+        { name: "宇航员", emoji: "👨‍🚀", hat: "维生头盔", action: "keep", failMsg: "摘了就窒息了！这是特殊情况！" },
+        { name: "穆斯林女士", emoji: "🧕", hat: "Hijab头巾", action: "keep", failMsg: "请尊重不同的宗教文化习俗。" },
+        { name: "正在化疗的患者", emoji: "🤕", hat: "医疗头巾", action: "keep", failMsg: "有点同情心吧！这是为了遮挡伤口。" },
+        { name: "慈祥老奶奶", emoji: "👵", hat: "保暖绒帽", action: "keep", failMsg: "老人家怕冷，保罗也会体谅的。" },
+        { name: "养蜂人", emoji: "🐝", hat: "防蜂面罩", action: "keep", failMsg: "万一教堂里有蜜蜂呢？留着吧。" },
+        { name: "艺伎", emoji: "👘", hat: "繁复头饰", action: "keep", failMsg: "那是发型的一部分，摘了就毁容了。" },
+        { name: "刚做完手术", emoji: "🧠", hat: "满头纱布", action: "keep", failMsg: "这是绷带！不是帽子！" },
+        { name: "中世纪女巫", emoji: "🧙‍♀️", hat: "尖顶帽", action: "keep", failMsg: "虽然她是女巫...但按女士礼仪她可以戴。" },
+        { name: "桑拿房大妈", emoji: "🧖‍♀️", hat: "羊角毛巾", action: "keep", failMsg: "虽然很怪，但女士包头通常是被允许的。" },
+        { name: "滑雪运动员", emoji: "⛷️", hat: "护目镜", action: "keep", failMsg: "这算是眼镜还是帽子？算了，安全第一。" },
+        { name: "吉祥物扮演者", emoji: "🐼", hat: "熊猫头套", action: "keep", failMsg: "摘了头套他就失业了，那是他的脸！" },
+        { name: "阿拉伯王子", emoji: "👳‍♂️", hat: "Ghutra头巾", action: "keep", failMsg: "这是民族传统服装，应当尊重。" },
+        { name: "东正教牧首", emoji: "⛪", hat: "黑色圆筒帽", action: "keep", failMsg: "神职人员在礼仪中是需要遮盖的。" },
+        { name: "印度新郎", emoji: "🤵", hat: "华丽头巾", action: "keep", failMsg: "这是婚礼服饰！别动！" }
+    ];
+
+    const auntieQuotes = [
+        "全部脱掉！这叫众生平等！",
+        "头发也是遮盖，不如剃度！",
+        "上帝面前人人平等，摘！",
+        "我看这人就不虔诚，摘！",
+        "管他是谁，这是我的地盘！",
+        "那个太花哨了，给我摘！",
+        "不脱帽子不准进！",
+        "我是为了大家好！",
+        "规矩就是规矩！",
+        "头顶要有光！物理上的光！"
+    ];
+
+    class Game {
+        constructor() {
+            this.score = 0;
+            this.queue = [];
+            this.currentIndex = 0;
+            this.isGameOver = false;
+        }
+
+        start() {
+            document.getElementById('start-screen').classList.add('hidden');
+            // 随机抽取12个倒霉蛋
+            this.queue = this.shuffleArray([...characterPool]).slice(0, 12);
+            this.updateCounter();
+            this.renderCard();
+            this.updateNPC();
+        }
+
+        shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        updateCounter() {
+            document.getElementById('timer-display').innerText = `剩余: ${this.queue.length - this.currentIndex}`;
+        }
+
+        renderCard() {
+            const container = document.getElementById('card-container');
+            container.innerHTML = ''; 
+
+            if (this.currentIndex >= this.queue.length) {
+                this.endGame();
+                return;
+            }
+
+            const data = this.queue[this.currentIndex];
+            const card = document.createElement('div');
+            card.className = 'card';
+            
+            // 拜占庭光环 + 这里的Emoji
+            card.innerHTML = `
+                <div class="halo"></div>
+                <div class="visitor-emoji">${data.emoji}</div>
+                <div class="card-info">
+                    <div class="visitor-desc">${data.name}</div>
+                    <div class="visitor-hat-type">${data.hat}</div>
+                </div>
+            `;
+            container.appendChild(card);
+        }
+
+        updateNPC() {
+            const bubble = document.getElementById('npc-text');
+            // 大妈有概率发疯
+            const randomQuote = auntieQuotes[Math.floor(Math.random() * auntieQuotes.length)];
+            bubble.innerText = randomQuote;
+            // 简单的抖动效果
+            bubble.style.transform = `rotate(${Math.random()*4 - 2}deg)`;
+        }
+
+        handleChoice(keepHat) {
+            if (this.isGameOver) return;
+
+            const current = this.queue[this.currentIndex];
+            const shouldKeep = current.action === 'keep';
+            const isCorrect = (keepHat === shouldKeep);
+
+            // 视觉反馈
+            this.triggerVisualEffect(isCorrect, keepHat);
+
+            if (isCorrect) {
+                this.score += 10;
+                document.getElementById('score-display').innerText = `功德: ${this.score}`;
+            } else {
+                // 失败弹窗（临时覆盖）
+                this.showFailReason(current.failMsg);
+            }
+
+            // 卡片飞出动画
+            const card = document.querySelector('.card');
+            card.style.animation = keepHat ? 'flyRight 0.6s forwards' : 'flyLeft 0.6s forwards';
+
+            this.currentIndex++;
+            this.updateCounter();
+
+            setTimeout(() => {
+                this.renderCard();
+                this.updateNPC();
+            }, 600);
+        }
+
+        triggerVisualEffect(isCorrect, choice) {
+            const container = document.getElementById('pow-container');
+            const el = document.createElement('div');
+            el.className = 'pow-effect';
+            el.style.left = '50%';
+            el.style.top = '40%';
+            el.style.transform = 'translate(-50%, -50%)';
+            
+            // 漫画拟声词
+            if (isCorrect) {
+                el.innerText = choice ? "Pass!" : "Swish!"; // 咻！
+                el.style.color = "#2e7d32";
+            } else {
+                el.innerText = "BONK!!"; // 邦！
+                el.style.color = "#c62828";
+            }
+            
+            el.style.animation = 'boom 0.5s ease-out forwards';
+            container.appendChild(el);
+            setTimeout(() => el.remove(), 500);
+        }
+
+        showFailReason(msg) {
+            const bubble = document.getElementById('npc-text');
+            bubble.innerText = "错啦！" + msg;
+            bubble.style.color = "red";
+            setTimeout(() => bubble.style.color = "black", 1500);
+        }
+
+        endGame() {
+            this.isGameOver = true;
+            const screen = document.getElementById('end-screen');
+            screen.classList.remove('hidden');
+            
+            const scoreText = document.getElementById('end-score');
+            const comment = document.getElementById('end-comment');
+            const emoji = document.getElementById('end-emoji');
+
+            scoreText.innerText = `最终功德: ${this.score}`;
+
+            if (this.score < 60) {
+                emoji.innerText = "🤡";
+                comment.innerHTML = "你被大妈完全同化了。<br>现在教堂门口贴着你的照片，<br>标题是<b>《头皮收割者》</b>。";
+            } else if (this.score < 100) {
+                emoji.innerText = "😐";
+                comment.innerHTML = "你是个<b>“差不多先生”</b>。<br>虽然得罪了几个主教，<br>但至少没把新娘气跑。";
+            } else {
+                emoji.innerText = "😇";
+                comment.innerHTML = "<b>【圣堂守门人】成就达成！</b><br>你完美平衡了律法与恩典。<br>大妈已被你气得回乡下种地了。";
+            }
+        }
+    }
+
+    const game = new Game();
+
+</script>
+</body>
+</html>

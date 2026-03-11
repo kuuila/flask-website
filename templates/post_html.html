@@ -1,0 +1,117 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<article class="post-content">
+    <header class="post-header">
+        <span class="tag {{ post.css_class }}" style="margin-bottom: 10px;">{{ post.category }}</span>
+        <h1>{{ post.title }}</h1>
+        <div class="meta tech-font">
+            发布于: {{ post.created_at.strftime('%Y-%m-%d %H:%M') }} | 标签: {{ post.tags }}
+        </div>
+        
+        <!-- 新增：社交分享栏 -->
+        <div class="share-bar tech-font">
+            <span style="opacity:0.6; margin-right:10px;">[传播信号] ::</span>
+            <a href="javascript:void(0)" onclick="shareTo('wechat')" class="share-btn">WeChat</a>
+            <a href="javascript:void(0)" onclick="shareTo('weibo')" class="share-btn">Weibo</a>
+            <a href="javascript:void(0)" onclick="shareTo('twitter')" class="share-btn">X / Twitter</a>
+            <a href="javascript:void(0)" onclick="copyLink()" class="share-btn">Copy Link</a>
+        </div>
+        <!-- 微信二维码弹窗 (默认隐藏) -->
+        <div id="wx-qr-modal" class="hidden" style="margin-top:15px; text-align:center;">
+            <p style="font-size:0.8rem; color:#888;">扫描二维码分享到微信</p>
+            <img id="qr-img" src="" style="width:150px; border: 5px solid white;">
+        </div>
+
+    </header>
+    
+    <div style="font-size: 1.1rem; min-height: 200px; line-height: 1.8;">
+        {{ post.content | safe }}
+    </div>
+
+    <div style="margin-top: 40px; padding-top: 20px; border-top: 1px dashed #444; opacity: 0.7;">
+        <a href="/" class="tech-font"><< 返回首页</a>
+    </div>
+</article>
+
+<!-- 评论区 -->
+<div class="comment-section">
+    <h3 class="tech-font" style="border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px;">
+        > 数据痕迹 (只保留最初10条与最后40条)
+    </h3>
+
+    <div class="comment-list">
+        {% if comments %}
+            {% for c in comments %}
+                <div class="comment-item">
+                    <div class="comment-meta tech-font">
+                        <span class="c-user">[{{ c.nickname }}]</span>
+                        <span class="c-time">{{ c.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                        <span class="c-id">#{{ loop.index }}</span>
+                    </div>
+                    <div class="comment-body">
+                        {{ c.content }}
+                    </div>
+                </div>
+                {% if loop.index == 10 and comments|length > 10 %}
+                <div style="text-align:center; color:#555; margin: 20px 0; font-family: monospace;">
+                    [ ... 时间的裂缝: 中间的数据已丢失 ... ]
+                </div>
+                {% endif %}
+            {% endfor %}
+        {% else %}
+            <div style="opacity: 0.5; font-style: italic;">暂无痕迹，留下你的第一条记录...</div>
+        {% endif %}
+    </div>
+
+    <form class="comment-form" method="POST" action="{{ url_for('post_detail', post_id=post.id) }}">
+        <div class="form-group">
+            <input type="text" name="nickname" placeholder="署名 (可选)" maxlength="20">
+        </div>
+        <div class="form-group">
+            <textarea name="content" placeholder="输入你的信号..." required maxlength="500"></textarea>
+        </div>
+        <button type="submit">写入数据</button>
+    </form>
+</div>
+
+<script>
+    // 分享逻辑
+    function shareTo(platform) {
+        var url = encodeURIComponent(window.location.href);
+        var title = encodeURIComponent("{{ post.title }} | 个人宇宙");
+        var targetUrl = "";
+
+        if (platform === 'weibo') {
+            targetUrl = "http://service.weibo.com/share/share.php?url=" + url + "&title=" + title;
+            window.open(targetUrl, '_blank');
+        } else if (platform === 'twitter') {
+            targetUrl = "https://twitter.com/intent/tweet?text=" + title + "&url=" + url;
+            window.open(targetUrl, '_blank');
+        } else if (platform === 'wechat') {
+            // 调用一个公开的二维码 API
+            var qrApi = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" + url;
+            var modal = document.getElementById('wx-qr-modal');
+            var img = document.getElementById('qr-img');
+            
+            if (modal.classList.contains('hidden')) {
+                img.src = qrApi;
+                modal.classList.remove('hidden');
+            } else {
+                modal.classList.add('hidden');
+            }
+        }
+    }
+
+    function copyLink() {
+        var dummy = document.createElement('input'),
+        text = window.location.href;
+        document.body.appendChild(dummy);
+        dummy.value = text;
+        dummy.select();
+        document.execCommand('copy');
+        document.body.removeChild(dummy);
+        alert('链接已复制到剪贴板，请手动分享。');
+    }
+</script>
+{% endblock %}

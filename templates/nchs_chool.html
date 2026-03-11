@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>NCHS.CHOOL | Strategic Deck</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Noto+Serif+SC:wght@300;400;700&family=Rajdhani:wght@500;700&family=Inter:wght@300;500&display=swap');
+
+        :root {
+            /* 核心色调：克莱因蓝 + 荣耀金 */
+            --klein-blue: #002FA7;
+            --pure-white: #FFFFFF;
+            --harvest-gold: #FFD700;
+            --soft-gold: rgba(255, 215, 0, 0.2);
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            --deep-shadow: rgba(0, 0, 0, 0.3);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            background-color: var(--klein-blue);
+            color: var(--pure-white);
+            font-family: 'Inter', 'Noto Serif SC', sans-serif;
+            height: 100vh; width: 100vw; overflow: hidden;
+            display: flex; flex-direction: column;
+        }
+
+        /* ------------------ 背景视效 ------------------ */
+        .bg-layer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none;
+        }
+        .blue-void {
+            background: radial-gradient(circle at 50% 30%, #1a55e3 0%, var(--klein-blue) 80%);
+            width: 100%; height: 100%; position: absolute;
+        }
+        .halo {
+            width: 80vh; height: 80vh; border: 1px solid rgba(255,255,255,0.05); border-radius: 50%;
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+        }
+        /* 背景水印 Logo (简化版) */
+        .bg-watermark {
+            position: absolute; bottom: -10%; right: -15%; width: 70vw; height: 70vw;
+            fill: none; stroke: var(--pure-white); stroke-width: 0.5; opacity: 0.03;
+            transform: rotate(-10deg); pointer-events: none;
+        }
+
+        /* ------------------ 幻灯片容器 ------------------ */
+        .deck-container {
+            flex: 1; position: relative; z-index: 10;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        .slide {
+            position: absolute; width: 85%; max-width: 500px; height: 80%;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            opacity: 0; transform: translateX(50px); transition: all 0.6s cubic-bezier(0.25, 0.8, 0.25, 1);
+            pointer-events: none;
+        }
+        
+        .slide.active {
+            opacity: 1; transform: translateX(0); pointer-events: auto;
+        }
+        .slide.prev {
+            opacity: 0; transform: translateX(-50px);
+        }
+
+        /* ------------------ 视觉元素 ------------------ */
+        
+        /* 【核心优化】可爱小羔羊 Logo */
+        .lamb-logo {
+            width: 120px; height: 120px;
+            fill: none; stroke: var(--harvest-gold); stroke-width: 2.5;
+            filter: drop-shadow(0 0 15px var(--soft-gold));
+            margin-bottom: 30px;
+            stroke-linecap: round; stroke-linejoin: round;
+            /* 浮动呼吸动画 */
+            animation: float 4s ease-in-out infinite;
+        }
+        @keyframes float { 0%,100% {transform:translateY(0);} 50% {transform:translateY(-12px);} }
+
+        /* 封面页 */
+        .cover-content { text-align: center; }
+        .main-title { 
+            font-family: 'Cinzel'; font-size: 3.2rem; line-height: 1; 
+            margin-bottom: 15px; text-shadow: 0 0 20px var(--soft-gold); 
+        }
+        .biblical-quote {
+            font-family: 'Cinzel'; color: var(--harvest-gold); font-size: 0.9rem;
+            letter-spacing: 2px; border-top: 1px solid rgba(255,255,255,0.2);
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+            padding: 10px 0; margin-top: 10px;
+        }
+
+        /* 板块封面页 (Chapter) */
+        .chapter-num { font-family: 'Cinzel'; font-size: 4rem; color: rgba(255,255,255,0.1); line-height: 1; }
+        .chapter-title { font-family: 'Cinzel'; font-size: 2rem; color: var(--harvest-gold); margin-bottom: 10px; text-align: center;}
+        .chapter-desc { font-size: 0.9rem; opacity: 0.8; text-align: center; max-width: 80%; }
+
+        /* 详情页卡片 (Detail) */
+        .detail-card {
+            background: var(--glass-bg); border: 1px solid var(--glass-border);
+            padding: 30px 25px; border-radius: 4px; backdrop-filter: blur(10px);
+            width: 100%; box-shadow: 0 10px 30px var(--deep-shadow);
+            border-top: 3px solid var(--harvest-gold);
+        }
+        .card-label { font-family: 'Rajdhani'; color: var(--harvest-gold); font-size: 0.8rem; margin-bottom: 10px; letter-spacing: 2px;}
+        .card-head { font-family: 'Cinzel'; font-size: 1.8rem; margin-bottom: 20px; line-height: 1.2; }
+        .card-body { font-size: 1rem; line-height: 1.6; color: rgba(255,255,255,0.9); font-weight: 300; }
+        .highlight { color: var(--harvest-gold); font-weight: bold; }
+
+        /* 数据行 */
+        .data-row { display: flex; justify-content: space-between; padding: 15px 0; border-bottom: 1px dashed rgba(255,255,255,0.2); }
+        .data-val { font-family: 'Rajdhani'; font-size: 1.2rem; color: var(--harvest-gold); }
+
+        /* 进度条 */
+        .progress-box { margin-top: 20px; }
+        .bar-bg { width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; }
+        .bar-fill { height: 100%; background: var(--harvest-gold); width: 0; box-shadow: 0 0 10px var(--harvest-gold); transition: width 1s;}
+
+        /* 尾页 */
+        .end-text { font-family: 'Cinzel'; font-size: 1.8rem; margin-bottom: 20px; text-align: center; line-height: 1.4; }
+
+        /* ------------------ 导航控制 ------------------ */
+        .nav-bar {
+            position: absolute; bottom: 30px; width: 100%; padding: 0 30px;
+            display: flex; align-items: center; z-index: 20;
+            pointer-events: none;
+        }
+        
+        .nav-btn {
+            background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); color: white;
+            width: 50px; height: 50px; border-radius: 50%; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; font-size: 1.2rem;
+            transition: 0.3s; pointer-events: auto;
+            position: absolute; left: 30px; /* 固定左侧 */
+        }
+        .nav-btn:hover { border-color: var(--harvest-gold); color: var(--harvest-gold); }
+        
+        /* NEXT 按钮 - 靠右 */
+        .main-btn {
+            position: absolute; right: 30px; /* 固定右侧 */
+            background: var(--harvest-gold); color: var(--klein-blue); border: none;
+            padding: 0 30px; height: 50px; font-family: 'Rajdhani'; font-weight: bold;
+            font-size: 1rem; letter-spacing: 2px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.4); pointer-events: auto;
+            clip-path: polygon(10% 0, 100% 0, 100% 70%, 90% 100%, 0 100%, 0 30%);
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse { 0% {transform: scale(1);} 50% {transform: scale(1.05);} 100% {transform: scale(1);} }
+
+        .progress-dots {
+            position: absolute; top: 40px; width: 100%; display: flex; justify-content: center; gap: 5px; z-index: 20;
+        }
+        .dot { width: 4px; height: 4px; background: rgba(255,255,255,0.2); border-radius: 50%; }
+        .dot.active { background: var(--harvest-gold); width: 20px; border-radius: 2px; transition: 0.3s; }
+
+    </style>
+</head>
+<body>
+
+    <!-- 背景层 -->
+    <div class="bg-layer">
+        <div class="blue-void"></div>
+        <div class="halo"></div>
+        <!-- 背景水印 -->
+        <svg class="bg-watermark" viewBox="0 0 100 100">
+             <path d="M30,40 Q25,25 40,25 Q50,15 60,25 Q75,25 70,40 M30,40 Q30,40 30,45 Q50,70 70,45 Q70,40 70,40" fill="none" stroke="currentColor"/>
+        </svg>
+    </div>
+
+    <!-- 顶部进度点 -->
+    <div class="progress-dots" id="dots"></div>
+
+    <!-- 幻灯片区域 -->
+    <div class="deck-container" id="deck">
+        
+        <!-- 0. 首页：可爱小羔羊 Logo -->
+        <div class="slide active">
+            <!-- 
+               Logo 设计说明：
+               1. 头部上方是像云朵一样的卷毛 (Cute Wool)
+               2. 脸部是圆润的 U 型 (Soft Face)
+               3. 眼睛是圆点，嘴巴是微笑 (Smiling)
+               4. 耳朵垂下来 (Droopy Ears) 显得温顺可爱
+            -->
+            <svg class="lamb-logo" viewBox="0 0 100 100">
+                <!-- 头顶的卷毛 (Cloud Shape) -->
+                <path d="M28,40 Q25,25 40,25 Q50,15 60,25 Q75,25 72,40" fill="none" stroke="currentColor"/>
+                
+                <!-- 垂下来的耳朵 (Droopy Ears) -->
+                <path d="M28,42 Q15,45 20,55 Q28,58 30,48" fill="none" stroke="currentColor"/>
+                <path d="M72,42 Q85,45 80,55 Q72,58 70,48" fill="none" stroke="currentColor"/>
+
+                <!-- 脸部轮廓 (Soft U-Shape) -->
+                <path d="M30,42 Q30,45 30,45 Q50,75 70,45" fill="none" stroke="currentColor"/>
+
+                <!-- 眼睛 (Eyes) -->
+                <circle cx="40" cy="50" r="3" fill="currentColor"/>
+                <circle cx="60" cy="50" r="3" fill="currentColor"/>
+
+                <!-- 鼻子和嘴巴 (Smile) -->
+                <path d="M50,56 Q52,58 54,56 M50,58 L50,62" fill="none" stroke="currentColor" stroke-width="2"/>
+            </svg>
+
+            <div class="cover-content">
+                <div class="main-title">NCHS<br>CHOOL</div>
+                <!-- 圣经主题文案 -->
+                <div class="biblical-quote">
+                    A LAND FLOWING WITH<br>MILK & HONEY
+                </div>
+                <div style="font-size:0.8rem; margin-top:20px; opacity:0.7; font-family:'Inter';">Producer's Strategic Proposal</div>
+            </div>
+        </div>
+
+        <!-- 1. Chapter I 封面 -->
+        <div class="slide">
+            <div class="chapter-num">I</div>
+            <div class="chapter-title">THE VESSEL</div>
+            <div class="chapter-desc">Productization Strategy<br>空间产品化方案</div>
+        </div>
+
+        <!-- 1.1 Zone A -->
+        <div class="slide">
+            <div class="detail-card">
+                <div class="card-label">PRODUCT 01</div>
+                <div class="card-head">The Grid<br><span style="font-size:1.2rem; opacity:0.7;">微型租赁墙</span></div>
+                <div class="card-body">
+                    <p>将入口墙面切分为 <span class="highlight">20个格子铺</span>。</p>
+                    <br>
+                    <p>针对付不起整租租金的自由职业者和插画师。积少成多，汇聚长尾流量。</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 1.2 Zone B -->
+        <div class="slide">
+            <div class="detail-card">
+                <div class="card-label">PRODUCT 02</div>
+                <div class="card-head">The Stage<br><span style="font-size:1.2rem; opacity:0.7;">多功能中厅</span></div>
+                <div class="card-body">
+                    <p>面积：<span class="highlight">22㎡</span> 核心区域。</p>
+                    <br>
+                    <p>采用可移动陈列。白天是品牌 <b>Showroom</b>，晚上只需10分钟即可清场，变身为 <b>沙龙/直播间</b>。</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 1.3 Zone C -->
+        <div class="slide">
+            <div class="detail-card">
+                <div class="card-label">PRODUCT 03</div>
+                <div class="card-head">The Silence<br><span style="font-size:1.2rem; opacity:0.7;">静默室</span></div>
+                <div class="card-body">
+                    <p>全店核心 <span class="highlight">USP (差异化卖点)</span>。</p>
+                    <br>
+                    <p>仅容一人的“精神氧舱”。在喧嚣的建国路，按分钟售卖“绝对的安静”。</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Chapter II 封面 -->
+        <div class="slide">
+            <div class="chapter-num">II</div>
+            <div class="chapter-title">SCENARIOS</div>
+            <div class="chapter-desc">Monetization Models<br>商业变现场景</div>
+        </div>
+
+        <!-- 2.1 Daytime -->
+        <div class="slide">
+            <div class="detail-card">
+                <div class="card-label">SCENARIO A</div>
+                <div class="card-head">Daytime<br><span style="font-size:1.2rem; opacity:0.7;">品牌租赁</span></div>
+                <div class="card-body">
+                    <p><b>Target:</b> 设计师品牌 / 香氛</p>
+                    <div style="margin-top:15px; padding-top:15px; border-top:1px solid rgba(255,255,255,0.1);">
+                        <div class="data-row">
+                            <span>Mode</span> <span>Showroom / Pop-up</span>
+                        </div>
+                        <div class="data-row" style="border:none;">
+                            <span>Price</span> <span class="highlight">Fixed Rent</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2.2 Evening -->
+        <div class="slide">
+            <div class="detail-card">
+                <div class="card-label">SCENARIO B</div>
+                <div class="card-head">Evening<br><span style="font-size:1.2rem; opacity:0.7;">心灵门票</span></div>
+                <div class="card-body">
+                    <p><b>Target:</b> 焦虑的都市青年</p>
+                    <div style="margin-top:15px; padding-top:15px; border-top:1px solid rgba(255,255,255,0.1);">
+                        <div class="data-row">
+                            <span>Mode</span> <span>电影 / 冥想 / 声音</span>
+                        </div>
+                        <div class="data-row" style="border:none;">
+                            <span>Price</span> <span class="highlight">¥68 - ¥128 / Ticket</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2.3 Commission -->
+        <div class="slide">
+            <div class="detail-card">
+                <div class="card-label">SCENARIO C</div>
+                <div class="card-head">Anytime<br><span style="font-size:1.2rem; opacity:0.7;">直播佣金</span></div>
+                <div class="card-body">
+                    <p><b>Target:</b> 线上流量变现</p>
+                    <div style="margin-top:15px; padding-top:15px; border-top:1px solid rgba(255,255,255,0.1);">
+                        <div class="data-row">
+                            <span>Mode</span> <span>KOL 直播 / 艺术品交易</span>
+                        </div>
+                        <div class="data-row" style="border:none;">
+                            <span>Price</span> <span class="highlight">15% - 20% Commission</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Chapter III 封面 -->
+        <div class="slide">
+            <div class="chapter-num">III</div>
+            <div class="chapter-title">FORECAST</div>
+            <div class="chapter-desc">Revenue Projection<br>营收预估</div>
+        </div>
+
+        <!-- 3.1 Data -->
+        <div class="slide">
+            <div class="detail-card">
+                <div class="card-label">MONTHLY (CONSERVATIVE)</div>
+                <div class="card-head">¥ 22,000</div>
+                
+                <div class="data-row">
+                    <span>Micro-Leasing (格子铺)</span> <span class="highlight">¥ 6,000</span>
+                </div>
+                <div class="data-row">
+                    <span>Events (门票)</span> <span class="highlight">¥ 8,000</span>
+                </div>
+                <div class="data-row">
+                    <span>Commission (佣金)</span> <span class="highlight">¥ 5,000</span>
+                </div>
+                <div class="data-row">
+                    <span>Silence Room (体验)</span> <span class="highlight">¥ 3,000</span>
+                </div>
+                
+                <p style="font-size:0.7rem; margin-top:20px; opacity:0.6; text-align:center;">* 此模型已完全覆盖房租与水电成本</p>
+            </div>
+        </div>
+
+        <!-- 4. Chapter IV 封面 -->
+        <div class="slide">
+            <div class="chapter-num">IV</div>
+            <div class="chapter-title">SPLIT</div>
+            <div class="chapter-desc">Profit Distribution<br>利益分配</div>
+        </div>
+
+        <!-- 4.1 Landlords -->
+        <div class="slide">
+            <div class="detail-card">
+                <div class="card-label">STAKEHOLDER 01</div>
+                <div class="card-head">Landlords<br><span style="font-size:1.2rem; opacity:0.7;">房东姐妹</span></div>
+                
+                <div class="progress-box">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                        <span>Share</span> <span class="highlight">50%</span>
+                    </div>
+                    <div class="bar-bg"><div class="bar-fill" style="width:50%;"></div></div>
+                </div>
+                <p style="margin-top:20px; font-size:0.9rem;">优先支付房租，保障资产安全。你们提供土壤，我们负责耕种。</p>
+            </div>
+        </div>
+
+        <!-- 4.2 Team -->
+        <div class="slide">
+            <div class="detail-card">
+                <div class="card-label">STAKEHOLDER 02</div>
+                <div class="card-head">Team<br><span style="font-size:1.2rem; opacity:0.7;">制作人与义工</span></div>
+                
+                <div class="progress-box">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                        <span>Share</span> <span class="highlight">30%</span>
+                    </div>
+                    <div class="bar-bg"><div class="bar-fill" style="width:30%; background:#fff;"></div></div>
+                </div>
+                <p style="margin-top:20px; font-size:0.9rem;">工价是理所应当的。激励运营团队持续产出优质内容。</p>
+            </div>
+        </div>
+
+        <!-- 4.3 Charity -->
+        <div class="slide">
+            <div class="detail-card">
+                <div class="card-label">STAKEHOLDER 03</div>
+                <div class="card-head">Charity<br><span style="font-size:1.2rem; opacity:0.7;">信仰与公益</span></div>
+                
+                <div class="progress-box">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                        <span>Share</span> <span class="highlight">20%</span>
+                    </div>
+                    <div class="bar-bg"><div class="bar-fill" style="width:20%;"></div></div>
+                </div>
+                <p style="margin-top:20px; font-size:0.9rem;">支持教会圣工与爱物流通基金。这是 NCHS 的品牌灵魂。</p>
+            </div>
+        </div>
+
+        <!-- 5. 尾页 -->
+        <div class="slide">
+            <!-- 再次展示可爱小羔羊 -->
+            <svg class="lamb-logo" viewBox="0 0 100 100" style="animation:none;">
+                <path d="M28,40 Q25,25 40,25 Q50,15 60,25 Q75,25 72,40" fill="none" stroke="currentColor"/>
+                <path d="M28,42 Q15,45 20,55 Q28,58 30,48" fill="none" stroke="currentColor"/>
+                <path d="M72,42 Q85,45 80,55 Q72,58 70,48" fill="none" stroke="currentColor"/>
+                <path d="M30,42 Q30,45 30,45 Q50,75 70,45" fill="none" stroke="currentColor"/>
+                <circle cx="40" cy="50" r="3" fill="currentColor"/>
+                <circle cx="60" cy="50" r="3" fill="currentColor"/>
+                <path d="M50,56 Q52,58 54,56 M50,58 L50,62" fill="none" stroke="currentColor" stroke-width="2"/>
+            </svg>
+            <div class="end-text">
+                May the Lord Bless<br>
+                This Good Land.
+            </div>
+            <div style="font-size:0.8rem; opacity:0.6; margin-bottom:30px;">Strategy Ready. Awaiting Execution.</div>
+            <div class="main-btn" onclick="location.reload()" style="background:transparent; border:1px solid var(--harvest-gold); color:var(--harvest-gold);">REPLAY</div>
+        </div>
+
+    </div>
+
+    <!-- 底部导航 -->
+    <div class="nav-bar">
+        <button class="nav-btn" onclick="prevSlide()">←</button>
+        <button class="main-btn" onclick="nextSlide()">NEXT</button>
+    </div>
+
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const dotsContainer = document.getElementById('dots');
+
+        // Init Dots
+        slides.forEach((_, i) => {
+            const dot = document.createElement('div');
+            dot.classList.add('dot');
+            if(i===0) dot.classList.add('active');
+            dotsContainer.appendChild(dot);
+        });
+        const dots = document.querySelectorAll('.dot');
+
+        function updateSlide() {
+            slides.forEach((slide, index) => {
+                slide.classList.remove('active', 'prev');
+                if (index === currentSlide) {
+                    slide.classList.add('active');
+                } else if (index < currentSlide) {
+                    slide.classList.add('prev');
+                }
+            });
+
+            dots.forEach((dot, index) => {
+                dot.classList.toggle('active', index === currentSlide);
+            });
+
+            // Update Button Text on Last Slide
+            const mainBtn = document.querySelector('.main-btn');
+            if (currentSlide === slides.length - 1) {
+                mainBtn.style.display = 'none';
+            } else {
+                mainBtn.style.display = 'flex';
+                mainBtn.innerText = currentSlide === 0 ? "START" : "NEXT";
+            }
+        }
+
+        function nextSlide() {
+            if (currentSlide < slides.length - 1) {
+                currentSlide++;
+                updateSlide();
+            }
+        }
+
+        function prevSlide() {
+            if (currentSlide > 0) {
+                currentSlide--;
+                updateSlide();
+            }
+        }
+    </script>
+</body>
+</html>

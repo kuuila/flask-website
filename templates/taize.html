@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>泰泽：窄门之路</title>
+    <style>
+        /* --- 基础设定 --- */
+        :root {
+            --bg-dark: #0a0502;
+            --gold: #ffd700;
+            --taize-orange: #ff8c00;
+            --doom-red: #8a0303;
+            --poison-green: #2e7d32;
+            --panel-bg: rgba(20, 10, 5, 0.98);
+        }
+
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            font-family: 'Georgia', serif;
+            background-color: var(--bg-dark);
+            color: #ccc;
+            -webkit-tap-highlight-color: transparent;
+            overscroll-behavior-y: none;
+            overflow: hidden;
+        }
+
+        /* 视觉特效层 */
+        #fx-layer {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 800;
+            transition: all 0.3s ease;
+            mix-blend-mode: overlay;
+        }
+        /* 摔倒模糊特效 */
+        .blur-effect { backdrop-filter: blur(5px); background: rgba(0,0,0,0.5); }
+
+        /* --- 游戏世界 --- */
+        #viewport {
+            width: 100%; height: 100%; overflow-y: scroll; scroll-behavior: smooth;
+            position: relative; background: #110b08;
+        }
+        #world-content {
+            width: 100%; height: 5800px; /* 更长的旅途 */
+            position: relative; padding-bottom: 200px;
+            background-image: 
+                radial-gradient(circle at 20% 20%, rgba(50,30,20,0.5) 0%, transparent 20%),
+                radial-gradient(circle at 80% 80%, rgba(50,30,20,0.5) 0%, transparent 20%);
+            background-size: 500px 500px;
+        }
+
+        /* --- 实体样式 --- */
+        .entity {
+            position: absolute; z-index: 10; left: 50%; transform: translateX(-50%);
+            transition: transform 0.2s; display: flex; flex-direction: column; align-items: center;
+        }
+        .entity:active { transform: translateX(-50%) scale(0.95); }
+        
+        .svg-icon { filter: drop-shadow(0 5px 10px rgba(0,0,0,0.8)); width: 100px; height: 150px; }
+        .npc-name { margin-top: 5px; font-size: 12px; color: #888; text-shadow: 0 2px 4px #000; }
+
+        /* 物品球 */
+        .item-orb {
+            width: 55px; height: 55px; border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, #fff, #999);
+            border: 2px solid var(--gold);
+            display: flex; justify-content: center; align-items: center;
+            box-shadow: 0 0 10px var(--gold);
+            animation: floatY 3s infinite ease-in-out;
+            font-size: 24px;
+        }
+        
+        /* 干扰物品样式 */
+        .fake-item { filter: hue-rotate(90deg); border-color: #555; box-shadow: none; animation: none; }
+        
+        /* 教会帽子 (华丽的陷阱) */
+        .church-hat {
+            width: 70px; height: 70px;
+            filter: drop-shadow(0 0 15px gold);
+            animation: pulse 2s infinite;
+            cursor: pointer;
+        }
+
+        /* 隐形深坑 */
+        .pit-trap {
+            position: absolute; width: 100px; height: 40px;
+            background: radial-gradient(ellipse at center, rgba(0,0,0,0.8), transparent);
+            border-radius: 50%; left: 50%; transform: translateX(-50%);
+            opacity: 0.6; z-index: 1;
+        }
+        .pit-trap::after { content:'???'; color:#333; font-size:10px; position:absolute; left:40%; top:10px; }
+
+        /* 布局位置 */
+        .pos-left { left: 20% !important; transform: translateX(-50%) !important; }
+        .pos-right { left: 80% !important; transform: translateX(-50%) !important; }
+        .pos-mid-left { left: 35% !important; transform: translateX(-50%) !important; }
+        .pos-mid-right { left: 65% !important; transform: translateX(-50%) !important; }
+
+        /* 陷阱特效 */
+        .trap-glow { box-shadow: 0 0 20px #f00; border-color: #f00; }
+
+        /* --- 恶魔与战争 --- */
+        .demon {
+            position: fixed; pointer-events: none; z-index: 500; opacity: 0; transition: opacity 1s;
+        }
+        body.war-mode .demon { opacity: 1; }
+        #dragon { top: 15%; right: -60px; width: 160px; animation: flyAttack 5s infinite; }
+        #harpy { top: 25%; left: -60px; width: 130px; animation: flyHover 4s infinite; }
+
+        /* --- UI 布局 --- */
+        #top-bar {
+            position: fixed; top: 0; left: 0; width: 100%; height: 70px;
+            background: linear-gradient(to bottom, #000, transparent); z-index: 900;
+            display: flex; flex-direction: column; justify-content: center; padding: 0 15px;
+        }
+        #doom-wrapper { width: 100%; display: flex; align-items: center; gap: 10px; }
+        #doom-track { flex-grow: 1; height: 8px; background: #330000; border: 1px solid #500; border-radius:4px; }
+        #doom-bar { width: 0%; height: 100%; background: #f00; transition: width 0.3s; border-radius:4px; }
+        
+        #nav-btn {
+            position: absolute; right: 15px; top: 15px;
+            background: var(--taize-orange); color: #fff; border: none; padding: 6px 12px;
+            border-radius: 20px; font-weight: bold; box-shadow: 0 0 10px rgba(255, 140, 0, 0.5);
+        }
+
+        #war-alert {
+            position: fixed; top: 80px; width: 100%; text-align: center;
+            color: #f00; font-weight: bold; font-size: 18px; text-shadow: 0 0 10px #000;
+            display: none; animation: flash 0.5s infinite; pointer-events: none; z-index: 950;
+        }
+
+        #bottom-panel {
+            position: fixed; bottom: 0; left: 0; width: 100%; height: 90px;
+            background: var(--panel-bg); border-top: 2px solid var(--gold); z-index: 900;
+            display: flex; align-items: center; padding: 0 10px;
+        }
+        #inv-container { display: flex; gap: 10px; overflow-x: auto; width: 100%; }
+        .slot {
+            min-width: 60px; height: 60px; border: 2px solid #5a3a22; background: rgba(0,0,0,0.5);
+            display: flex; justify-content: center; align-items: center; border-radius: 8px; font-size: 28px;
+        }
+        .slot.selected { border-color: var(--gold); background: rgba(255,215,0,0.2); }
+
+        #narrative {
+            position: fixed; bottom: 130px; left: 50%; transform: translateX(-50%);
+            width: 85%; background: rgba(0,0,0,0.9); border: 1px solid var(--gold);
+            padding: 15px; text-align: center; color: #fff; font-size: 14px;
+            display: none; z-index: 1000; border-radius: 8px; pointer-events: none;
+        }
+
+        /* 泰泽壁龛 */
+        .taize-niche {
+            width: 240px; height: 260px;
+            background: radial-gradient(circle at 50% 50%, #4a2505, #150a00);
+            border-radius: 120px 120px 0 0;
+            box-shadow: inset 0 0 40px #000, 0 0 0 8px #1a0f05;
+            display: flex; flex-direction: column; align-items: center; padding-top: 40px;
+        }
+        .taize-cross { width: 60px; height: 90px; opacity: 0.3; transition: 1s; }
+        .taize-niche.lit .taize-cross { opacity: 1; filter: drop-shadow(0 0 20px var(--taize-orange)); }
+        .candle-rack { margin-top: auto; margin-bottom: 25px; display: flex; gap: 12px; }
+        .candle { width: 12px; height: 35px; background: #ccc; position: relative; }
+        .flame {
+            position: absolute; top: -15px; left: -1px; width: 14px; height: 18px;
+            background: radial-gradient(circle, #fff, orange, red); opacity: 0; transition: 0.3s;
+        }
+        .candle.lit .flame { opacity: 1; animation: flicker 0.5s infinite; }
+
+        /* 动画 */
+        @keyframes floatY { 0%,100%{margin-top:0;} 50%{margin-top:-8px;} }
+        @keyframes flicker { to { transform: scale(1.1); opacity: 0.8; } }
+        @keyframes pulse { 0%{transform:scale(1);} 50%{transform:scale(1.05);} 100%{transform:scale(1);} }
+        @keyframes warPulse { 0%{background-color:#200;} 50%{background-color:#500;} 100%{background-color:#200;} }
+        @keyframes flyAttack { 0%{transform:translate(0,0);} 50%{transform:translate(-40px, 20px);} 100%{transform:translate(0,0);} }
+        @keyframes flyHover { 0%{transform:translate(0,0);} 50%{transform:translate(30px, -30px);} 100%{transform:translate(0,0);} }
+        @keyframes flash { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+        .shake { animation: shake 0.4s; }
+        @keyframes shake { 0%,100%{transform:translateX(0);} 25%{transform:translateX(-10px) rotate(-5deg);} 75%{transform:translateX(10px) rotate(5deg);} }
+
+        #svg-defs { display: none; }
+    </style>
+</head>
+<body>
+
+    <!-- SVG 资源库 -->
+    <svg id="svg-defs">
+        <!-- 圣人通用 -->
+        <symbol id="icon-base" viewBox="0 0 100 150">
+            <path d="M20,150 L25,50 L75,50 L80,150 Z" fill="currentColor"/>
+            <circle cx="50" cy="40" r="30" fill="#ffd700" stroke="#b8860b" stroke-width="2"/>
+            <circle cx="50" cy="45" r="18" fill="#d2b48c"/>
+        </symbol>
+        <!-- 菲洛梅娜 -->
+        <symbol id="icon-philo" viewBox="0 0 100 150">
+            <use href="#icon-base" color="#e91e63"/>
+            <path d="M30,55 Q50,20 70,55" fill="none" stroke="#fff" stroke-width="3"/>
+            <path d="M75,150 L85,40" stroke="#4caf50" stroke-width="3"/>
+        </symbol>
+        <!-- 恶龙 -->
+        <symbol id="icon-dragon" viewBox="0 0 100 100">
+            <path d="M20,50 Q40,10 80,20 Q90,30 80,50 Q60,80 20,50 Z" fill="#b71c1c"/>
+            <circle cx="70" cy="35" r="3" fill="yellow"/>
+        </symbol>
+        <!-- 鹰女 -->
+        <symbol id="icon-harpy" viewBox="0 0 100 100">
+            <path d="M10,40 Q50,0 90,40 L50,90 Z" fill="#1a237e"/>
+            <circle cx="50" cy="30" r="15" fill="#d2b48c"/>
+        </symbol>
+        <!-- 主教冠 (Mitre) - 陷阱 -->
+        <symbol id="icon-mitre" viewBox="0 0 100 100">
+            <path d="M20,90 L20,30 L50,5 L80,30 L80,90 Z" fill="#f5f5f5" stroke="#ffd700" stroke-width="3"/>
+            <path d="M50,5 L50,90" stroke="#ffd700" stroke-width="2"/>
+            <circle cx="50" cy="50" r="5" fill="#b71c1c"/>
+        </symbol>
+        <!-- 方角帽 (Biretta) - 陷阱 -->
+        <symbol id="icon-biretta" viewBox="0 0 100 100">
+            <rect x="10" y="40" width="80" height="40" fill="#000"/>
+            <path d="M10,40 L25,10 L50,40 L75,10 L90,40" fill="#000"/>
+            <circle cx="50" cy="10" r="5" fill="#b71c1c"/>
+        </symbol>
+    </svg>
+
+    <div class="background-pattern"></div>
+    <div id="fx-layer"></div>
+
+    <!-- 恶魔 -->
+    <div class="demon" id="dragon"><svg width="150" height="150"><use href="#icon-dragon"/></svg></div>
+    <div class="demon" id="harpy"><svg width="120" height="120"><use href="#icon-harpy"/></svg></div>
+
+    <!-- UI -->
+    <div id="top-bar">
+        <div style="color:var(--gold); font-size:12px; margin-bottom:2px;">SPIRITUAL HEALTH (DOOM)</div>
+        <div id="doom-wrapper">
+            <div id="doom-track"><div id="doom-bar"></div></div>
+        </div>
+        <button id="nav-btn" onclick="scrollToTaize()">🕊️ 避难</button>
+    </div>
+    <div id="war-alert">⚠️ 宗派战争爆发！寻找泰泽之光！ ⚠️</div>
+
+    <!-- 游戏世界 -->
+    <div id="viewport">
+        <div id="world-content">
+            
+            <div style="position:absolute; width:100%; top:100px; text-align:center; color:#666;">↓ 窄门之路 充满试探 ↓</div>
+
+            <!-- ============ 1. 圣安当区 (Top: 400px) ============ -->
+            <!-- 坑: 左侧 -->
+            <div class="pit-trap pos-left" style="top:350px;" onclick="trip('你被世俗的绊脚石绊倒了！')"></div>
+
+            <div class="entity" id="npc-anthony" style="top:400px;" onclick="interact('anthony')">
+                <svg class="svg-icon" style="color:#5a3a22"><use href="#icon-base"/></svg>
+                <div class="npc-name">圣安当</div>
+            </div>
+            
+            <!-- 真面包 -->
+            <div class="entity item-orb pos-right" style="top:550px;" onclick="pickup('bread', '粗面包', '🍞')">🍞</div>
+            <!-- 假面包 (发霉) -->
+            <div class="entity item-orb fake-item pos-left" style="top:580px; filter:grayscale(1);" onclick="trip('这是发霉的面包！你中毒了！', 15)">🍞</div>
+            
+            <!-- 蛇 (陷阱) -->
+            <div class="entity pos-mid-right" style="top:650px; font-size:40px; cursor:pointer;" onclick="trip('毒蛇咬了你一口！', 25)">🐍</div>
+
+
+            <!-- ============ 2. 泰泽区 (Top: 1300px) ============ -->
+            <!-- 陷阱: 方角帽 (Biretta) - 律法主义 -->
+            <div class="entity pos-right" style="top:1100px;">
+                <svg class="church-hat" onclick="pickupTrap('方角帽', '你追求的是律法而非恩典！')"><use href="#icon-biretta"/></svg>
+                <div style="font-size:10px; color:#555; text-align:center;">教条</div>
+            </div>
+
+            <div id="taize-spot" class="entity taize-niche" style="top:1300px;">
+                <svg width="60" height="90" class="taize-cross" style="position:relative;"><use href="#icon-base" style="opacity:0;"/></svg>
+                <div style="position:absolute; top:50px; font-size:60px; color:var(--taize-red); opacity:0.5;">✝</div>
+                <div class="candle-rack">
+                    <div class="candle" onclick="lightCandle(this)"><div class="flame"></div></div>
+                    <div class="candle" onclick="lightCandle(this)"><div class="flame"></div></div>
+                    <div class="candle" onclick="lightCandle(this)"><div class="flame"></div></div>
+                    <div class="candle" onclick="lightCandle(this)"><div class="flame"></div></div>
+                    <div class="candle" onclick="lightCandle(this)"><div class="flame"></div></div>
+                </div>
+                <div style="position:absolute; bottom:5px; font-size:10px; color:#666;">点亮烛光</div>
+            </div>
+
+
+            <!-- ============ 3. 玛加利大区 (Top: 2200px) ============ -->
+            <div class="pit-trap pos-mid-right" style="top:2100px;" onclick="trip('你在黑暗中跌倒了！')"></div>
+
+            <div class="entity" id="npc-margaret" style="top:2200px;" onclick="interact('margaret')">
+                <svg class="svg-icon" style="color:#1e3f5a"><use href="#icon-base"/></svg>
+                <div class="npc-name">玛加利大</div>
+            </div>
+            
+            <!-- 陷阱: 镜子 -->
+            <div class="entity item-orb trap-glow pos-left" style="top:2350px;" onclick="pickupTrap('虚荣之镜', '虚空的虚空！')">🪞</div>
+
+
+            <!-- ============ 4. 菲洛梅娜区 (Top: 3000px) ============ -->
+            <!-- 陷阱: 主教冠 (Mitre) - 权力欲 -->
+            <div class="entity pos-left" style="top:2800px;">
+                <svg class="church-hat" onclick="pickupTrap('华丽的主教冠', '你贪图高位，却忘记了服务！')"><use href="#icon-mitre"/></svg>
+                <div style="font-size:10px; color:gold; text-align:center;">权力</div>
+            </div>
+
+            <div class="entity" id="npc-philo" style="top:3000px;" onclick="interact('philo')">
+                <svg class="svg-icon"><use href="#icon-philo"/></svg>
+                <div class="npc-name" style="color:#f48fb1">圣菲洛梅娜</div>
+            </div>
+            
+            <!-- 核心剧情陷阱: 铁锚 -->
+            <div class="entity item-orb trap-glow pos-right" style="top:3150px; border-color:red;" onclick="triggerSchism()">⚓</div>
+            <div style="position:absolute; top:3210px; left:75%; transform:translateX(-50%); color:red; font-size:10px;">勿动</div>
+
+
+            <!-- ============ 5. 圣保罗区 (Top: 4000px) ============ -->
+            <div class="pit-trap pos-mid-left" style="top:3900px;" onclick="trip('你被骄傲绊倒了！')"></div>
+
+            <div class="entity" id="npc-paul" style="top:4000px;" onclick="interact('paul')">
+                <svg class="svg-icon" style="color:#8a0303"><use href="#icon-base"/></svg>
+                <div class="npc-name">圣保罗</div>
+            </div>
+            <!-- 陷阱: 剑 -->
+            <div class="entity item-orb trap-glow pos-right" style="top:4150px;" onclick="pickupTrap('杀戮之剑', '凡动刀的，必死在刀下！')">🗡️</div>
+
+
+            <!-- ============ 6. 圣若望区 (Top: 4800px) ============ -->
+            <div class="entity" id="npc-john" style="top:4800px;" onclick="interact('john')">
+                <svg class="svg-icon" style="color:#663399"><use href="#icon-base"/></svg>
+                <div class="npc-name">圣若望</div>
+            </div>
+            <div class="entity" id="target-book" style="top:5000px; font-size:80px;" onclick="interact('book')">📜🔒</div>
+
+        </div>
+    </div>
+
+    <div id="bottom-panel">
+        <div id="inv-container"></div>
+    </div>
+    <div id="narrative">提示信息</div>
+
+    <script>
+        const state = { doom: 30, warMode: false, candlesLit: 0, inventory: [], selectedId: null, flags: {} };
+
+        // 战争循环
+        setInterval(() => {
+            if (state.warMode) {
+                increaseDoom(3, null); // 战争期间 Doom 持续快速上升
+                if(Math.random() > 0.8) document.body.classList.add('shake');
+                setTimeout(()=>document.body.classList.remove('shake'), 200);
+            }
+        }, 1000);
+
+        // --- 陷阱与干扰 ---
+        function trip(msg, dmg=20) {
+            increaseDoom(dmg, msg);
+            // 摔倒特效
+            const fx = document.getElementById('fx-layer');
+            fx.classList.add('blur-effect');
+            fx.style.backgroundColor = "rgba(255,0,0,0.3)";
+            document.body.classList.add('shake');
+            setTimeout(() => {
+                fx.classList.remove('blur-effect');
+                fx.style.backgroundColor = "transparent";
+                document.body.classList.remove('shake');
+            }, 800);
+        }
+
+        function pickupTrap(name, reason) {
+            trip(`捡起了 ${name}：${reason}`, 30);
+            event.target.style.display = 'none'; // 陷阱消失
+        }
+
+        function triggerSchism() {
+            if (state.warMode) return;
+            state.warMode = true;
+            document.body.classList.add('war-mode');
+            document.getElementById('war-alert').style.display = 'block';
+            event.target.closest('.entity').style.display = 'none';
+            trip("你触动了绝望之锚！宗派战争爆发了！", 40);
+        }
+
+        // --- 泰泽祈祷 ---
+        function lightCandle(el) {
+            if (el.classList.contains('lit')) return;
+            el.classList.add('lit');
+            state.candlesLit++;
+            reduceDoom(15);
+            if(state.candlesLit >= 5) {
+                document.getElementById('taize-spot').classList.add('lit');
+                endWar();
+                setTimeout(resetCandles, 10000);
+            }
+        }
+
+        function endWar() {
+            if (state.warMode) {
+                state.warMode = false;
+                document.body.classList.remove('war-mode');
+                document.getElementById('war-alert').style.display = 'none';
+                showMessage("泰泽的共融之光平息了战火。");
+                reduceDoom(100);
+            } else {
+                showMessage("平安临在。");
+            }
+        }
+
+        function resetCandles() {
+            document.querySelectorAll('.candle').forEach(c => c.classList.remove('lit'));
+            document.getElementById('taize-spot').classList.remove('lit');
+            state.candlesLit = 0;
+        }
+
+        // --- 正常逻辑 ---
+        function pickup(id, name, icon) {
+            event.target.closest('.entity').style.display = 'none';
+            showMessage(`获得 ${name}`);
+            state.inventory.push({id, icon});
+            renderInventory();
+        }
+
+        function interact(target) {
+            const item = state.inventory.find(i => i.id === state.selectedId);
+            const itemId = item ? item.id : null;
+
+            if (state.warMode && target !== 'john') {
+                trip("战争中无法对话！快去避难！", 5);
+                return;
+            }
+
+            if(!itemId) {
+                if(target==='anthony') showMessage("圣安当：给我面包。注意别拿发霉的。");
+                else if(target==='philo') showMessage("圣菲洛梅娜：我需要百合花。");
+                else showMessage("我需要某样东西...");
+                return;
+            }
+
+            // 解谜链
+            if(target==='anthony' && itemId==='bread') solve('anthony', 'bread', 'oil', '🏺', '圣油');
+            else if(target==='margaret' && itemId==='oil') solve('margaret', 'oil', 'lily', '⚜️', '百合花');
+            else if(target==='philo' && itemId==='lily') solve('philo', 'lily', 'quill', '🪶', '羽毛笔');
+            else if(target==='paul' && itemId==='quill') solve('paul', 'quill', 'key', '🗝️', '钥匙');
+            else if((target==='john'||target==='book') && itemId==='key') {
+                if(state.warMode) showMessage("先平息战争！");
+                else { alert("神恩复临！通关！"); location.reload(); }
+            }
+            else increaseDoom(10, "不需要此物。");
+        }
+
+        function solve(flag, consume, reward, icon, name) {
+            if(state.flags[flag]) return;
+            state.flags[flag] = true;
+            state.inventory = state.inventory.filter(i => i.id !== consume);
+            state.selectedId = null;
+            state.inventory.push({id: reward, icon});
+            renderInventory();
+            showMessage(`获得 ${name}`);
+        }
+
+        // --- 核心数值 ---
+        function increaseDoom(amt, msg) {
+            state.doom = Math.min(100, state.doom + amt);
+            updateDoomUI();
+            if(msg) showMessage(msg);
+            if(state.doom >= 100) { alert("心灵破碎，在试探中跌倒。"); location.reload(); }
+        }
+        function reduceDoom(amt) { state.doom = Math.max(0, state.doom - amt); updateDoomUI(); }
+        
+        function updateDoomUI() {
+            const bar = document.getElementById('doom-bar');
+            bar.style.width = state.doom + "%";
+            // 动态变色
+            if(state.doom > 80) bar.style.backgroundColor = "#ff0000";
+            else if(state.doom > 50) bar.style.backgroundColor = "#ff8800";
+            else bar.style.backgroundColor = "#00ff00";
+        }
+
+        function renderInventory() {
+            const c = document.getElementById('inv-container');
+            c.innerHTML = '';
+            state.inventory.forEach(i => {
+                const div = document.createElement('div');
+                div.className = 'slot ' + (state.selectedId === i.id ? 'selected' : '');
+                div.innerText = i.icon;
+                div.onclick = () => { state.selectedId = i.id; renderInventory(); };
+                c.appendChild(div);
+            });
+        }
+
+        function showMessage(text) {
+            const box = document.getElementById('narrative');
+            box.innerText = text;
+            box.style.display = 'block';
+            setTimeout(() => box.style.display='none', 3000);
+        }
+
+        function scrollToTaize() {
+            document.getElementById('viewport').scrollTo({ top: 1300 - (window.innerHeight/2) + 130, behavior: 'smooth' });
+        }
+
+        updateDoomUI();
+    </script>
+</body>
+</html>

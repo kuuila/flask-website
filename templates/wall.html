@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="zh">
+<head>
+    <meta charset="utf-8">
+    <title>墙缝里的微光 | Gleam in the Cracks | 벽 틈 사이의 미광</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/reveal.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/theme/black.min.css">
+
+    <style>
+        :root {
+            --accent: #c5a059; /* 昏暗中的微光色 */
+            --text-dim: #999;
+        }
+
+        .reveal {
+            background-color: #0a0a0a;
+            font-family: "PingFang SC", "Hiragino Sans GB", "Noto Sans CJK KR", "Malgun Gothic", sans-serif;
+        }
+
+        /* 三语文本样式布局 */
+        .content-box {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            text-align: left;
+            width: 50%; /* 占据左侧 */
+        }
+
+        .lang-zh { font-size: 0.9em; color: #fff; line-height: 1.5; font-weight: 500; }
+        .lang-en { font-size: 0.6em; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; line-height: 1.4; }
+        .lang-kr { font-size: 0.7em; color: var(--text-dim); line-height: 1.4; }
+
+        /* 照片展位样式 */
+        .photo-placeholder {
+            width: 45%;
+            height: 500px;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            overflow: hidden;
+        }
+
+        .photo-placeholder img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            filter: grayscale(100%) contrast(120%); /* 强制黑白效果 */
+        }
+
+        .photo-label {
+            color: #444;
+            font-size: 0.5em;
+            text-transform: uppercase;
+        }
+
+        .title-slide h1 { font-size: 2.2em !important; border-bottom: 1px solid var(--accent); padding-bottom: 20px; }
+        .keyword { color: var(--accent); }
+
+        /* 模拟墙缝光束特效 */
+        .light-beam {
+            position: fixed;
+            width: 1px;
+            height: 100vh;
+            background: linear-gradient(to bottom, transparent, var(--accent), transparent);
+            left: 10%;
+            opacity: 0.3;
+            z-index: 0;
+        }
+    </style>
+</head>
+<body>
+
+<div class="light-beam"></div>
+
+<div class="reveal">
+    <div class="slides">
+
+        <!-- Slide 1: Title -->
+        <section class="title-slide">
+            <h1 style="color:white">墙缝里的微光</h1>
+            <p style="color:var(--accent); font-size: 1.2em;">Gleam in the Cracks</p>
+            <p style="color:#666; font-size: 1.2em;">벽 틈 사이의 미광</p>
+            <div style="margin-top: 100px; font-size: 0.5em; opacity: 0.6;">
+                SHANGHAI ACADEMY OF FINE ARTS | DOCTORAL PROJECT
+            </div>
+        </section>
+
+        <!-- Slide 2: The Field -->
+        <section>
+            <div class="content-box">
+                <div class="lang-zh">我把废弃大楼当作一个<span class="keyword">仍在呼吸的场</span>：进入、倾听、触碰、行动。</div>
+                <div class="lang-en">I treat the abandoned building as a <span class="keyword">field that is still breathing</span>: entering, listening, touching, and acting.</div>
+                <div class="lang-kr">나는 폐허가 된 건물을 <span class="keyword">여전히 숨 쉬고 있는 현장</span>으로 간주한다. 그곳에 들어가고, 경청하고, 접촉하며, 행동한다.</div>
+            </div>
+            <div class="photo-placeholder">
+                <!-- 在此处替换图片地址 -->
+                <img src="/static/wall3_web.jpg" alt="现场照片1">
+            </div>
+        </section>
+
+        <!-- Slide 3: Uncertainty -->
+        <section>
+            <div class="content-box">
+                <div class="lang-zh">自由不是任性，而是允许<span class="keyword">不确定性</span>成为形式的来源。</div>
+                <div class="lang-en">Freedom is not self-indulgence, but allowing <span class="keyword">uncertainty</span> to become the source of form.</div>
+                <div class="lang-kr">자유는 방종이 아니라, <span class="keyword">불확실성</span>이 형식의 근원이 되도록 허용하는 것이다.</div>
+            </div>
+            <div class="photo-placeholder">
+                <img src="/static/wall6_web.jpg" alt="现场照片2">
+            </div>
+        </section>
+
+        <!-- Slide 4: Elements -->
+        <section>
+            <div class="content-box">
+                <div class="lang-zh">它由灰尘、潮气、裂缝、回声、光线、气味、结构疲劳共同构成。</div>
+                <div class="lang-en">It is composed of dust, moisture, cracks, echoes, light, odors, and structural fatigue.</div>
+                <div class="lang-kr">그것은 먼지, 습기, 균열, 메아리, 빛, 냄새, 구조적 피로가 함께 어우러져 구성된다.</div>
+            </div>
+            <div class="photo-placeholder">
+                <img src="/static/wall7_web.jpg" alt="Photo: Materiality / 物质性 / 물질성">
+            </div>
+        </section>
+
+        <!-- Slide 5: Body as Medium -->
+        <section>
+            <div class="content-box">
+                <div class="lang-zh">以<span class="keyword">身体进入</span>作为媒介，与场域的张力建立连接。</div>
+                <div class="lang-en">Using <span class="keyword">bodily entry</span> as a medium to establish a connection with the tension of the site.</div>
+                <div class="lang-kr"><span class="keyword">신체의 진입</span>을 매개로 하여 현장의 긴장감과 연결을 맺는다.</div>
+            </div>
+            <div class="photo-placeholder">
+                <img src="/static/wall8_web.jpg" alt="Photo: Body & Space / 身体与空间">
+            </div>
+        </section>
+
+        <!-- Slide 6: Process vs Display -->
+        <section>
+            <div class="content-box">
+                <div class="lang-zh">它更接近于<span class="keyword">“发生”</span>而非“陈列”，强调感知与行动如何被空间塑形。</div>
+                <div class="lang-en">It is closer to an <span class="keyword">"occurrence"</span> than a "display," emphasizing how perception and action are shaped by space.</div>
+                <div class="lang-kr">그것은 ‘진열’보다 <span class="keyword">‘발생’</span>에 더 가깝다. 지각과 행동이 공간에 의해 어떻게 형성되는지를 강조한다.</div>
+            </div>
+            <div class="photo-placeholder">
+                <!-- <div class="photo-label">Photo: Action / 行动记录</div> -->
+                <img src="/static/wall4_web.jpg" alt="Photo: Action / 行动记录">
+            </div>
+        </section>
+
+        <!-- Slide 7: Collaboration -->
+        <section>
+            <div class="content-box">
+                <div class="lang-zh">跨界交换：影像、摄影、绘画、装置、声音。</div>
+                <div class="lang-en">Interdisciplinary exchange: Video, Photography, Painting, Installation, Sound.</div>
+                <div class="lang-kr">경계를 넘나드는 교환: 영상, 사진, 회화, 설치, 소리.</div>
+            </div>
+            <div class="photo-placeholder">
+                <!-- <div class="photo-label">Photo: Multi-media / 综合媒介</div> -->
+                <img src="/static/wall10_web.jpg" alt="Photo: Action / 行动记录">
+            </div>
+        </section>
+
+        <!-- Slide 8: Ending -->
+        <section>
+            <div class="lang-zh">空间随时间消失，记录成为唯一的微光。</div>
+            <div class="lang-en" style="margin: 20px 0;">Space vanishes with time; recording becomes the only gleam.</div>
+            <div class="lang-kr">공간은 시간에 따라 사라지고, 기록만이 유일한 미광이 된다.</div>
+            <div style="margin-top: 50px; border-top: 1px solid var(--accent); display: inline-block; padding: 20px;">
+                <p style="font-size: 0.4em; color: #888;">Project by: [柯兰焰/Artist]</p>
+            </div>
+        </section>
+
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/reveal.min.js"></script>
+<script>
+    Reveal.initialize({
+        hash: true,
+        center: true,
+        transition: 'fade', // 淡入淡出，增加呼吸感
+        backgroundTransition: 'none',
+        width: 1200, // 增加宽度以适应并排布局
+        height: 700
+    });
+</script>
+</body>
+</html>

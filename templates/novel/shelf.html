@@ -1,0 +1,20 @@
+
+{% extends 'layout.html' %}
+{% block content %}
+<div style="text-align: center; margin-bottom: 40px;">
+    <h1 class="tech-font" style="color:var(--accent-life)">FLASH MUD SHELF</h1>
+    <p style="opacity: 0.6;">“打发时间，爽个文！”</p>
+</div>
+
+<div class="grid">
+    {% for book in books %}
+    <a href="{{ url_for('novel.toc', book_id=book.id) }}" class="card" style="border-left: 5px solid {{ book.cover_color }};">
+        <h3 style="color:{{ book.cover_color }}">{{ book.title }}</h3>
+        <div class="meta tech-font">Author: {{ book.author }} | {{ book.chapters|length }} Chapters</div>
+        <p style="font-size: 0.9rem; opacity: 0.8; margin-top:10px;">{{ book.summary }}</p>
+    </a>
+    {% else %}
+    <div style="text-align:center; width:100%; opacity:0.5;">书架空空如也...</div>
+    {% endfor %}
+</div>
+{% endblock %}

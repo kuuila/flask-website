@@ -1,0 +1,61 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<div style="text-align: center; margin-bottom: 40px;">
+    <h1>FLASH MUD STUDIO</h1>
+    <p style="opacity: 0.8;">“kuuila,kuuila,kuuila”</p>
+</div>
+
+<!-- 首页标签栏 (Tab) -->
+{% if current_tab != 'category' %}
+<div class="home-tabs tech-font">
+    <a href="/?tab=latest" class="tab-item {% if current_tab == 'latest' %}active{% endif %}">
+        ✨ 最新发布
+    </a>
+    <a href="/?tab=popular" class="tab-item {% if current_tab == 'popular' %}active{% endif %}">
+        🔥 人气最高
+    </a>
+    <a href="/?tab=recommend" class="tab-item {% if current_tab == 'recommend' %}active{% endif %}">
+        ⚡ 闪泥推荐
+    </a>
+</div>
+{% endif %}
+
+<h2 class="tech-font" style="font-size:1rem; margin-bottom:20px; border-bottom:1px dashed #333; padding-bottom:10px;">
+    > DATA_STREAM [Page {{ pagination.page }}]
+</h2>
+
+<div class="grid">
+    {% for post in pagination.items %}
+    <a href="{{ url_for('post_detail', post_id=post.id) }}" class="card">
+        <span class="meta tech-font">
+            {{ post.created_at.strftime('%Y-%m-%d') }} | {{ post.category }} | 👁️ {{ post.views or 0 }}
+        </span>
+        <h3 class="{{ post.css_class }}">{{ post.title }}</h3>
+        <p style="font-size: 0.9rem; opacity: 0.8;">{{ post.summary }}</p>
+        <div style="margin-top:10px;">
+            {% for tag in post.tags.split(',') %}
+            <span class="tag">{{ tag }}</span>
+            {% endfor %}
+        </div>
+    </a>
+    {% endfor %}
+</div>
+
+<!-- 分页控制器 -->
+<div class="pagination tech-font">
+    {% if pagination.has_prev %}
+        <a href="{{ url_for('index', page=pagination.prev_num, tab=current_tab) }}" class="page-btn">< PREV</a>
+    {% else %}
+        <span class="page-btn disabled">< PREV</span>
+    {% endif %}
+
+    <span class="page-info">PAGE {{ pagination.page }} / {{ pagination.pages }}</span>
+
+    {% if pagination.has_next %}
+        <a href="{{ url_for('index', page=pagination.next_num, tab=current_tab) }}" class="page-btn">NEXT ></a>
+    {% else %}
+        <span class="page-btn disabled">NEXT ></span>
+    {% endif %}
+</div>
+{% endblock %}

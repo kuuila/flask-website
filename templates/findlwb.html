@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>爱的旅程：小围脖去哪了? V1.5</title>
+    <style>
+        :root {
+            --bg: #fdfbf7;
+            --primary: #e17055;
+            --secondary: #00b894;
+        }
+
+        body {
+            font-family: 'PingFang SC', 'Segoe UI', sans-serif;
+            background-color: var(--bg);
+            color: #2d3436;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 10px;
+            user-select: none;
+        }
+
+        /* 顶部场景卡片 */
+        .stage-card {
+            background: white;
+            width: 100%; max-width: 350px;
+            padding: 15px; border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            margin-bottom: 15px; text-align: center;
+            border-top: 5px solid var(--primary);
+            transition: all 0.5s;
+        }
+        .stage-name { font-size: 1.2rem; font-weight: bold; color: #2d3436; margin-bottom: 5px; }
+        .stage-desc { font-size: 0.85rem; color: #636e72; }
+
+        /* 血条 */
+        .hp-container {
+            width: 100%; max-width: 350px;
+            display: flex; align-items: center; gap: 10px;
+            margin-bottom: 15px; font-size: 0.9rem;
+        }
+        .hp-bar-bg { flex: 1; height: 10px; background: #dfe6e9; border-radius: 5px; overflow: hidden; }
+        .hp-fill { height: 100%; background: var(--secondary); width: 100%; transition: width 0.3s; }
+
+        /* 游戏棋盘 */
+        .game-board {
+            display: grid; gap: 8px;
+            width: 100%; max-width: 350px;
+            margin-bottom: 20px;
+        }
+
+        .cell {
+            background: white; border-radius: 10px;
+            aspect-ratio: 1;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 1.6rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            cursor: pointer; position: relative;
+            transition: transform 0.1s;
+            border: 2px solid transparent;
+        }
+        .cell:active { transform: scale(0.95); }
+        .cell.revealed { background: #f1f2f6; cursor: default; filter: grayscale(0.5); opacity: 0.7; }
+        .cell.found { background: #dff9fb; border-color: #00cec9; font-size: 2.5rem; filter: none; opacity: 1; animation: pop 0.5s;}
+        
+        /* 线索颜色 */
+        .cell.hot { border-color: #ff7675; background: #fff0f0; } /* 很近 */
+        .cell.warm { border-color: #ffeaa7; background: #fffdf0; } /* 附近 */
+        .cell.cold { border-color: #74b9ff; background: #f0f9ff; } /* 远 */
+
+        /* 陷阱样式 */
+        .cell.trap { background: #ff7675 !important; color: white; animation: shake 0.4s; }
+
+        /* 技能区 */
+        .skills { display: flex; gap: 10px; width: 100%; max-width: 350px; }
+        .btn {
+            flex: 1; border: none; padding: 12px; border-radius: 10px;
+            color: white; font-weight: bold; cursor: pointer;
+            display: flex; flex-direction: column; align-items: center; font-size: 0.85rem;
+        }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-pray { background: linear-gradient(135deg, #a29bfe, #6c5ce7); }
+        .btn-hint { background: linear-gradient(135deg, #fab1a0, #e17055); }
+        .cost { font-size: 0.7rem; opacity: 0.8; margin-top: 2px; }
+
+        /* 消息栏 */
+        #msg { height: 25px; font-size: 0.9rem; color: var(--primary); font-weight: bold; text-align: center; }
+
+        /* 弹窗 */
+        .modal {
+            position: fixed; top:0; left:0; right:0; bottom:0;
+            background: rgba(0,0,0,0.9); display: none;
+            justify-content: center; align-items: center; z-index: 999;
+            flex-direction: column; text-align: center; color: white; padding: 30px;
+        }
+        .modal h2 { color: #ffeaa7; font-size: 1.8rem; margin-bottom: 20px; }
+        .modal p { line-height: 1.8; font-size: 1rem; color: #dfe6e9; margin-bottom: 30px; }
+        .btn-next { padding: 12px 40px; border-radius: 50px; border:none; background: var(--secondary); color: white; font-size: 1.1rem; cursor: pointer; }
+
+        @keyframes pop { 0% {transform: scale(0.5);} 80% {transform: scale(1.1);} 100% {transform: scale(1);} }
+        @keyframes shake { 0%, 100% {transform: translateX(0);} 25% {transform: translateX(-5px);} 75% {transform: translateX(5px);} }
+
+    </style>
+     <meta property="og:title" content="爱的旅程：小围脖去哪了?">
+    <meta property="og:description" content="围脖易寻，爱不丢失...">
+    <meta property="og:image" content="http://www.mxle.net/static/lovewb.png">
+    <meta property="og:type" content="website">
+</head>
+<body>
+
+    <div class="stage-card" id="stage-card">
+        <div class="stage-name" id="stage-name">📍 第1站：MonMon车上</div>
+        <div class="stage-desc" id="stage-desc">是不是落在座位缝隙里了？</div>
+    </div>
+
+    <div class="hp-container">
+        <span>❤️ 信心/平安值</span>
+        <div class="hp-bar-bg"><div class="hp-fill" id="hp-bar"></div></div>
+        <span id="hp-text">100</span>
+    </div>
+
+    <div id="msg">点击格子开始寻找...</div>
+
+    <div class="game-board" id="board"></div>
+
+    <div class="skills">
+        <button class="btn btn-pray" id="btn-pray" onclick="usePrayer()">
+            🙏 圣安多尼指引
+            <span class="cost">-30 HP (排除干扰)</span>
+        </button>
+        <button class="btn btn-hint" id="btn-radar" onclick="useRadar()">
+            📡 小分队人肉搜索
+            <span class="cost">-15 HP (探测区域)</span>
+        </button>
+    </div>
+
+    <!-- 弹窗 -->
+    <div class="modal" id="modal">
+        <div style="font-size: 4rem; margin-bottom: 10px;" id="modal-icon">🎉</div>
+        <h2 id="modal-title"></h2>
+        <p id="modal-desc"></p>
+        <button class="btn-next" id="modal-btn" onclick="nextStage()">继续旅程</button>
+    </div>
+
+    <script>
+        // === 游戏剧本配置 ===
+        const STAGES = [
+            {
+                name: "🚗 MonMon 的车上",
+                desc: "在这个私密的小空间里，是不是滑到座位底下了？",
+                size: 3, // 3x3
+                traps: 0,
+                damage: 5,
+                icons: ['🕶️','🎧','🧢','🔑','🍟','🥤','🧾','💿','🧸'],
+                msg: "这儿没有，只是些零钱和发票..."
+            },
+            {
+                name: "🥟 热闹的饺子馆",
+                desc: "那时候吃得正开心，会不会落在椅子背上了？",
+                size: 4, // 4x4
+                traps: 2, // 2个陷阱
+                damage: 10,
+                icons: ['🥟','🥢','🥣','🧂','🧄','🥤','🪑','🍽️','🥡'],
+                trapMsg: "哎呀！服务员端着热汤路过，吓了一跳！(HP -20)",
+                msg: "只有大蒜和醋，没看到围脖..."
+            },
+            {
+                name: "🛍️ 繁华的商场街道",
+                desc: "人来人往，诱惑很多，要专心寻找哦！",
+                size: 4,
+                traps: 3,
+                damage: 10,
+                icons: ['👠','👗','💄','🛍️','🎁','🧸','📱','💳','🎀'],
+                trapMsg: "被打折促销吸引了注意力，浪费了时间！(HP -20)",
+                msg: "不是这个，这只是个购物袋..."
+            },
+            {
+                name: "🎨 柯博的画展现场",
+                desc: "艺术气息浓厚，小心看花眼了。",
+                size: 5, // 5x5
+                traps: 4,
+                damage: 15,
+                icons: ['🖼️','🎨','🖌️','🧐','📸','🍷','🎭','🗿','🖍️'],
+                trapMsg: "你盯着一幅抽象画发呆太久了...(HP -20)",
+                msg: "这是艺术品，不是围脖..."
+            },
+            {
+                name: "⛪ 神圣的息焉堂",
+                desc: "最终的平安之地。如果这里也找不到，那就交给主吧。",
+                size: 5,
+                traps: 0, // 教堂里没有陷阱，只有宁静
+                damage: 15,
+                icons: ['✝️','🕯️','📖','🕊️','⛪','🎹','💐','🙏','✨'],
+                msg: "这里只有宁静的祈祷声...",
+                isFinal: true
+            }
+        ];
+
+        // 状态变量
+        let currentStageIdx = 0;
+        let hp = 100;
+        let target = {x:0, y:0};
+        let traps = [];
+        let isGameOver = false;
+
+        // 初始化关卡
+        function initStage() {
+            const stage = STAGES[currentStageIdx];
+            const board = document.getElementById('board');
+            
+            // 更新UI
+            document.getElementById('stage-name').innerText = stage.name;
+            document.getElementById('stage-desc').innerText = stage.desc;
+            document.getElementById('msg').innerText = "点击格子翻找看看...";
+            document.getElementById('btn-pray').disabled = false;
+            document.getElementById('btn-radar').disabled = false;
+            
+            // 重置棋盘
+            board.innerHTML = '';
+            board.style.gridTemplateColumns = `repeat(${stage.size}, 1fr)`;
+            
+            isGameOver = false;
+            hp = Math.min(hp + 30, 100); // 过关回血30
+            updateHP(0);
+            traps = [];
+
+            // 1. 设置目标
+            target = {
+                x: Math.floor(Math.random() * stage.size),
+                y: Math.floor(Math.random() * stage.size)
+            };
+
+            // 2. 设置陷阱
+            while(traps.length < stage.traps) {
+                let tx = Math.floor(Math.random() * stage.size);
+                let ty = Math.floor(Math.random() * stage.size);
+                if((tx !== target.x || ty !== target.y) && !isTrap(tx, ty)) {
+                    traps.push({x:tx, y:ty});
+                }
+            }
+
+            // 3. 生成格子
+            for(let y=0; y<stage.size; y++) {
+                for(let x=0; x<stage.size; x++) {
+                    let cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.dataset.x = x;
+                    cell.dataset.y = y;
+                    // 随机图标
+                    cell.innerText = stage.icons[Math.floor(Math.random() * stage.icons.length)];
+                    cell.onclick = () => check(cell, x, y);
+                    board.appendChild(cell);
+                }
+            }
+        }
+
+        function isTrap(x, y) {
+            return traps.some(t => t.x === x && t.y === y);
+        }
+
+        // 检查逻辑
+        function check(cell, x, y) {
+            if(isGameOver || cell.classList.contains('revealed')) return;
+            const stage = STAGES[currentStageIdx];
+
+            updateHP(-stage.damage);
+
+            // 踩陷阱
+            if(isTrap(x, y)) {
+                cell.classList.add('trap');
+                cell.innerText = '💥';
+                cell.classList.add('revealed');
+                updateHP(-20);
+                showMsg(stage.trapMsg, true);
+                if(hp <= 0) gameOver();
+                return;
+            }
+
+            // 找到目标
+            if(x === target.x && y === target.y) {
+                cell.classList.add('found');
+                cell.innerText = '🧣';
+                isGameOver = true;
+                setTimeout(stageClear, 600);
+                return;
+            }
+
+            // 没找到 - 给出线索
+            cell.classList.add('revealed');
+            const dist = Math.abs(x - target.x) + Math.abs(y - target.y);
+            
+            if(dist <= 1) {
+                cell.classList.add('hot');
+                showMsg("🔥 感觉到了！就在这旁边！");
+            } else if(dist <= 2) {
+                cell.classList.add('warm');
+                showMsg("⚠️ 稍微有点感觉，在附近...");
+            } else {
+                cell.classList.add('cold');
+                showMsg("❄️ " + stage.msg);
+            }
+
+            if(hp <= 0) gameOver();
+        }
+
+        // 技能：圣安多尼指引 (随机排除)
+        function usePrayer() {
+            if(isGameOver || hp <= 30) { showMsg("信心不足(HP不够)，无法祈祷！"); return; }
+            updateHP(-30);
+            
+            let safeCells = [];
+            document.querySelectorAll('.cell').forEach(c => {
+                let x = parseInt(c.dataset.x), y = parseInt(c.dataset.y);
+                if(!c.classList.contains('revealed') && !(x===target.x && y===target.y) && !isTrap(x,y)) {
+                    safeCells.push(c);
+                }
+            });
+
+            // 随机排除一半
+            safeCells.sort(() => Math.random() - 0.5);
+            let count = Math.max(1, Math.floor(safeCells.length / 2));
+            
+            for(let i=0; i<count; i++) {
+                safeCells[i].classList.add('revealed');
+                safeCells[i].innerText = '❌';
+                safeCells[i].style.opacity = '0.5';
+            }
+            showMsg(`🙏 圣安多尼显灵，排除了 ${count} 个错误地点！`);
+            document.getElementById('btn-pray').disabled = true;
+        }
+
+        // 技能：小分队雷达 (提示行或列)
+        function useRadar() {
+             if(isGameOver || hp <= 15) { showMsg("体力不足！"); return; }
+             updateHP(-15);
+             
+             // 随机提示行或列
+             if(Math.random() > 0.5) {
+                 showMsg(`📡 小分队线报：围脖就在 第 ${target.y+1} 行！`);
+                 // 高亮行
+                 document.querySelectorAll(`.cell[data-y="${target.y}"]`).forEach(c => {
+                     if(!c.classList.contains('revealed')) c.style.border = "2px dashed var(--primary)";
+                 });
+             } else {
+                 showMsg(`📡 小分队线报：围脖就在 第 ${target.x+1} 列！`);
+                 // 高亮列
+                 document.querySelectorAll(`.cell[data-x="${target.x}"]`).forEach(c => {
+                     if(!c.classList.contains('revealed')) c.style.border = "2px dashed var(--primary)";
+                 });
+             }
+             document.getElementById('btn-radar').disabled = true;
+        }
+
+        function updateHP(val) {
+            hp += val;
+            if(hp < 0) hp = 0; if(hp > 100) hp = 100;
+            document.getElementById('hp-bar').style.width = hp + "%";
+            document.getElementById('hp-text').innerText = hp;
+        }
+
+        function showMsg(txt, urgent=false) {
+            const m = document.getElementById('msg');
+            m.innerText = txt;
+            m.style.color = urgent ? "red" : "var(--primary)";
+        }
+
+        // 过关逻辑
+        function stageClear() {
+            const stage = STAGES[currentStageIdx];
+            const modal = document.getElementById('modal');
+            const title = document.getElementById('modal-title');
+            const desc = document.getElementById('modal-desc');
+            const btn = document.getElementById('modal-btn');
+            
+            modal.style.display = 'flex';
+
+            if(stage.isFinal) {
+                // 通关结局
+                title.innerText = "✨ 在主内寻回 ✨";
+                title.innerHTML = "围脖易丢<br>爱永不丢失";
+                title.style.color = "#fab1a0";
+                desc.innerHTML = "在息焉堂的宁静中，在弟兄姐妹的关爱里，<br>失去的终会以另一种方式归来。<br><br>马槽小分队永远爱你！❤️";
+                btn.innerText = "重新回味";
+                btn.onclick = () => location.reload();
+            } else {
+                // 普通过关
+                title.innerText = "这里没有...";
+                desc.innerText = "看来不在这里，可能是掉在下一站了？我们去那里找找！";
+                btn.innerText = `前往：${STAGES[currentStageIdx+1].name}`;
+                btn.onclick = () => {
+                    modal.style.display = 'none';
+                    currentStageIdx++;
+                    initStage();
+                };
+            }
+        }
+
+        // 失败逻辑
+        function gameOver() {
+            isGameOver = true;
+            const modal = document.getElementById('modal');
+            document.getElementById('modal-icon').innerText = "🥀";
+            document.getElementById('modal-title').innerText = "太累了...";
+            document.getElementById('modal-desc').innerText = "找了这么多地方，虽然身体累了，但你要知道，只要大家在一起，就没有过不去的坎。休息一下，我们帮你一起找！";
+            const btn = document.getElementById('modal-btn');
+            btn.innerText = "重新搜索此地";
+            btn.onclick = () => {
+                modal.style.display = 'none';
+                hp = 50; // 复活回半血
+                initStage();
+            };
+            modal.style.display = 'flex';
+        }
+
+        // 开始游戏
+        initStage();
+
+    </script>
+</body>
+</html>

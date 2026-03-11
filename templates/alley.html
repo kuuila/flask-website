@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SH_HolyAtlas | 上海青年灵修全景地图</title>
+    <style>
+        :root {
+            --bg-warm: #FFFDF7;
+            --grid-color: rgba(211, 84, 0, 0.08); /* 暖橙色网格 */
+            --cath-color: #D35400; /* 深赭橙 */
+            --prot-color: #2980B9; /* 静谧蓝 */
+            --space-color: #27AE60; /* 草木绿 */
+            --text-main: #4E342E;
+            --candle-glow: rgba(230, 126, 34, 0.4);
+        }
+
+        body, html {
+            margin: 0; padding: 0;
+            background-color: var(--bg-warm);
+            /* 主的承托：全屏网格系统 */
+            background-image: 
+                linear-gradient(var(--grid-color) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+            background-size: 30px 30px;
+            font-family: "Source Serif Pro", "PingFang SC", serif;
+            color: var(--text-main);
+            overflow-x: hidden;
+            scroll-behavior: smooth;
+        }
+
+        /* 顶部固定地图区 */
+        #header-map {
+            position: fixed; top: 0; width: 100%; height: 42vh;
+            z-index: 1000;
+            background: rgba(255, 253, 247, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 0.5px solid rgba(211, 84, 0, 0.2);
+            /* 地图层也要有网格，通过伪元素实现 */
+        }
+
+        .map-canvas { position: relative; width: 100%; height: 100%; }
+
+        /* 标记点通用样式 */
+        .marker {
+            position: absolute; width: 12px; height: 12px;
+            border-radius: 50%; cursor: pointer;
+            transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 10;
+        }
+        
+        /* 临近日期跳动动画 */
+        @keyframes jump {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-12px) scale(1.2); box-shadow: 0 15px 20px var(--candle-glow); }
+        }
+        .marker.is-near { animation: jump 2s infinite ease-in-out; }
+
+        .marker-cath { background: var(--cath-color); box-shadow: 0 0 10px var(--cath-color); }
+        .marker-prot { background: var(--prot-color); box-shadow: 0 0 10px var(--prot-color); }
+        .marker-space { background: var(--space-color); box-shadow: 0 0 10px var(--space-color); }
+
+        .marker.active { transform: scale(2.5) !important; z-index: 100; box-shadow: 0 0 30px rgba(0,0,0,0.2); }
+
+        .marker-label {
+            position: absolute; top: 18px; left: -25px; font-size: 9px;
+            letter-spacing: 1px; color: var(--text-main); font-weight: bold;
+            opacity: 0.6; pointer-events: none; white-space: nowrap;
+        }
+
+        /* 资讯滚动栏 */
+        #news-bar {
+            position: absolute; bottom: 0; width: 100%;
+            background: rgba(255, 255, 255, 0.4);
+            padding: 6px 0; font-size: 11px; border-top: 0.5px solid rgba(211, 84, 0, 0.1);
+        }
+
+        /* 下方内容抽屉 */
+        #content-container { margin-top: 42vh; padding: 25px 20px; padding-bottom: 100px; }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 24px; padding: 25px;
+            border: 0.5px solid rgba(211, 84, 0, 0.1);
+            box-shadow: 0 15px 45px rgba(211, 84, 0, 0.05);
+            animation: fadeIn 0.8s ease;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* 标签切换 */
+        .tab-nav { display: flex; justify-content: space-around; margin: 25px 0; border-bottom: 0.5px solid #EEE; }
+        .tab-btn { padding: 10px 0; font-size: 12px; cursor: pointer; opacity: 0.4; transition: 0.3s; position: relative; }
+        .tab-btn.active { opacity: 1; color: var(--cath-color); font-weight: bold; }
+        .tab-btn.active::after { content:''; position: absolute; bottom: -1px; left:0; width:100%; height:2px; background: var(--cath-color); }
+
+        /* 板块内容 */
+        .section { display: none; }
+        .section.active { display: block; }
+
+        /* 活动卡片 */
+        .act-item { background: #FFF; padding: 15px; border-radius: 12px; margin-bottom: 12px; border: 0.5px solid #FDF2E9; }
+        .act-date { font-size: 10px; color: var(--cath-color); font-weight: bold; margin-bottom: 5px; display: block; }
+
+        /* 学术文字 */
+        .acad-text { font-size: 14px; line-height: 1.8; color: #5D4037; text-align: justify; }
+
+        /* 分享列表 */
+        .comment-item { 
+            background: white; padding: 15px; border-radius: 15px; margin-bottom: 12px;
+            box-shadow: 2px 4px 10px rgba(0,0,0,0.02);
+        }
+        .user-info { display: flex; align-items: center; margin-bottom: 8px; }
+        .user-name { font-size: 12px; font-weight: bold; color: var(--cath-color); }
+        .user-tag { font-size: 9px; background: #F5F5F5; padding: 1px 6px; border-radius: 4px; margin-left: 8px; color: #999; }
+        .comment-text { font-size: 13px; font-style: italic; color: #6D4C41; }
+
+    </style>
+</head>
+<body>
+
+<div id="header-map">
+    <div class="map-canvas" id="map-root"></div>
+    <div id="news-bar">
+        <marquee scrollamount="3">
+            🕯️ [温馨提醒] 临近春节，各堂区弥撒时间表有调整，请点击跳动的烛火查看 · [空间动态] NCHS School 149号学术月度沙龙周五开启报名
+        </marquee>
+    </div>
+</div>
+
+<div id="content-container">
+    <div id="detail-card" class="glass-card">
+        <div id="intro">
+            <h2 id="p-name" style="margin:0; font-weight:400; color:var(--cath-color);">SH_HolyAtlas</h2>
+            <p id="p-addr" style="font-size:12px; color:#999; margin:10px 0 0 0;">请点击上方标记点开启灵修引导</p>
+        </div>
+
+        <div class="tab-nav">
+            <div class="tab-btn active" onclick="switchSection('liturgy', this)">最新活动</div>
+            <div class="tab-btn" onclick="switchSection('academic', this)">学术文化</div>
+            <div class="tab-btn" onclick="switchSection('peers', this)">教友分享</div>
+        </div>
+
+        <div id="liturgy" class="section active"></div>
+        <div id="academic" class="section"></div>
+        <div id="peers" class="section"></div>
+    </div>
+</div>
+
+<script>
+    // --- 极简数据集 ---
+   const locations = [
+    { name: "徐家汇圣依纳爵主教座堂", type: "cath", x: 42, y: 65, addr: "徐汇区蒲汇塘路158号", acad: "徐家汇圣依纳爵主教座堂是远东哥特式建筑的巅峰之作。其双尖塔高度达60米，象征着信仰对理性的飞跃。学术上，这里是‘西学东渐’的重要物理支点，承载了从明末徐光启到近代耶稣会科学家的智慧遗产。建筑内部的哥特式拱券不仅是受力结构，更是一种‘纵向空间神学’，引导信徒向上仰望。这里的每一块彩色玻璃都叙述着普世教会的历史，是上海走向近代国际化都市的宗教文化注脚。" },
+    { name: "佘山圣母大殿", type: "cath", x: 15, y: 80, addr: "松江区佘山山顶", acad: "佘山圣母大殿作为乙级宗座圣殿，是东亚著名的朝圣中心。建筑采用红色砖石，依山而建，其独特的钟楼与自然山势完美融合，体现了‘天人合一’的神学景观。学术界认为，佘山教堂不仅是宗教建筑，更是十九世纪上海建筑技术的实验场，其火山岩地基与拱顶结构在当时极具挑战性。这里不仅是朝圣者的终点，也是上海近代地质观测与天文研究的文化源头，见证了信仰与科学在松江大地的交汇。" },
+    { name: "NCHS_chool", type: "space", x: 48, y: 58, addr: "建国中路149号", acad: "NCHS School 位于建国中路149号的弄堂深处，是当代上海青年教友对‘灵性空间’的现代重构。不同于传统教堂的宏大叙事，149号空间强调‘日常中的圣洁’。通过极简的工业设计、主的承托网格系统，将信仰带入自由职业与创业者的日常生活。学术上，它被视为‘第三空间’神学的实践，即在家庭与圣殿之外，建立一个基于职业交流与深度灵修的共创社群，探讨如何在数字游民时代保持稳定的内心秩序。" },
+    { name: "圣伯多禄堂", type: "cath", x: 50, y: 55, addr: "黄浦区重庆南路270号", acad: "圣伯多禄堂以其罕见的拜占庭式穹顶在上海建筑林立中脱颖而出。圆形平面象征着上帝的完美与共融。作为上海教区青年团契的核心，其文化属性在于‘国际化与职场化’的深度结合。这里不仅是泰泽祈祷在上海的重要推广点，也是众多留学生与白领教友的精神家园。其学术分享常涉及当代城市社会学与信仰的关联，探讨在快节奏的黄浦区中心，如何通过礼仪的美学重构职场人的碎片化精神世界。" },
+    { name: "沐恩堂", type: "prot", x: 58, y: 44, addr: "黄浦区西藏中路316号", acad: "沐恩堂由著名建筑师邬达克设计，是上海Art Deco风格与哥特元素融合的杰作。其红砖外墙与霓虹灯十字架已成为人民广场的文化地标。学术上，沐恩堂记录了二十世纪初期上海社交生活与教会礼拜的深度交融。其室内独特的声学设计和木质回廊，体现了新教崇拜中对‘道’的宣讲的重视。它是上海近代社会变迁的观测点，也是研究近代西方传教士与民族工业精英互动的重要场所。" },
+    { name: "鸿德堂", type: "prot", x: 65, y: 25, addr: "虹口区多伦路59号", acad: "鸿德堂是上海绝无仅有的‘中式宫殿风格’教堂。其重檐歇山顶与彩绘斗拱，是上世纪二十年代‘建筑本土化’运动的产物。学术价值在于它如何尝试用中国传统的符号系统来表达基督信仰，打破了宗教作为‘洋教’的视觉刻板印象。位于多伦路文化街区的地理位置，使其天然带有一种‘文人气质’。学术沙龙常年关注文化融合与民族记忆，探讨福音如何在海派文化沃土中扎根并生长出独特的本土花朵。" },
+    { name: "若瑟堂", type: "cath", x: 62, y: 48, addr: "黄浦区四川南路36号", acad: "若瑟堂，原洋泾浜圣若瑟堂，是上海早期教区的主教座堂。其建筑风格融合了早期的罗马风与简练的哥特元素。作为上海最早对公众开放的大型教堂之一，它在学术上代表了上海开埠初期外滩地区的空间结构。它与周边的弄堂、老城厢紧密相连，形成了独特的‘社区化教堂’生态。这里的文化分享往往聚焦于‘老上海的根脉’，记录了上海普通民众信仰生活的百年变迁。"},
+    { name: "圣三一堂", type: "prot", x: 64, y: 41, addr: "黄浦区九江路219号", acad: "被誉为‘红礼拜堂’的圣三一堂，是英式哥特复兴风格在远东的极致代表。其修缮后的红砖色泽与木桁架屋顶展现了极致的工艺美学。学术界关注其作为英租界时期社交与精神中心的双重身份。它是上海管风琴文化的重镇，其学术交流多涉及宗教音乐史与建筑修复学，探讨如何通过物质文化遗产的活化，让当代青年在忙碌的外滩金融区寻得一份古老而稳重的礼仪安息。"},
+    { name: "大田路德肋撒堂", type: "cath", x: 53, y: 41, addr: "静安区大田路370号", acad: "大田路圣德肋撒堂以‘小道’灵修闻名。其半圆形的穹顶和简洁的立面，呼应了圣女小德肋撒那纯朴、谦卑的精神。学术上，该堂区是静安区闹中取静的灵性节点，研究者常以‘城市静谧空间’为题进行空间心理学分析。其文化特色在于将‘爱的科学’应用于青年的职场困惑，探讨如何在微小的日常事务中实践博爱精神。它是职场青年寻求心灵治愈、践行‘小事中见伟大’的灵修基地。"},
+    { name: "息焉堂", type: "cath", x: 28, y: 45, addr: "长宁区可乐路1号", acad: "息焉堂是邬达克最具神秘气息的作品。拜占庭风格的穹顶、匈牙利民俗元素的融入，使其在上海教堂群中独树一帜。原本作为墓地教堂的它，在学术上承载了关于‘终极关怀’与‘生命美学’的讨论。其周围静谧的环境与独特的造型，使其成为长宁区教友及建筑爱好者心中的圣地。文化分享多集中于建筑背后的生平叙事及艺术心理学，探讨美如何在生与死的边界上播种希望的种子。"}
+];
+
+    const actTemplates = ["泰泽共融祈祷", "职场减压沙龙", "青年主日弥撒", "建筑美学导赏", "圣经学术研读", "数字牧民团契"];
+    const userPool = [
+        { n: "利玛窦的追随者", t: "在校学生" }, { n: "加糖不加苦", t: "职场新人" }, { n: "野地里的百合", t: "自由职业" },
+        { n: "码代码的若瑟", t: "程序员" }, { n: "徐汇玛利亚", t: "设计师" }, { n: "Gap中的小王", t: "旅行者" }
+    ];
+    const phrasePool = [
+        "在建国中路的网格里，心终于定下来了。", "雨后的双塔，比任何画作都神圣。", "在这里静坐了半小时，焦虑真的消失了。", "学术分享很硬核，解开了我多年的困惑。",
+        "泰泽的烛光，照亮了我最暗的那个星期。", "弄堂里的歌声，很有穿透力。", "为主托付的每一个瞬间而感恩。", "建筑的线条，本身就是一种祈祷。"
+    ];
+
+    function init() {
+        const root = document.getElementById('map-root');
+        locations.forEach((loc, i) => {
+            const m = document.createElement('div');
+            m.className = `marker marker-${loc.type} ${loc.isNear ? 'is-near' : ''}`;
+            m.style.left = loc.x + '%';
+            m.style.top = loc.y + '%';
+            m.innerHTML = `<div class="marker-label">${loc.name.substring(0,10)}</div>`;
+            m.onclick = () => render(loc, m);
+            root.appendChild(m);
+        });
+        // 默认点击第一个
+        render(locations[2], document.querySelectorAll('.marker')[2]);
+    }
+
+    function render(loc, el) {
+        document.querySelectorAll('.marker').forEach(m => m.classList.remove('active'));
+        el.classList.add('active');
+
+        document.getElementById('p-name').innerText = loc.name;
+        document.getElementById('p-addr').innerText = `📍 ${loc.addr}`;
+
+        // 活动生成
+        const acts = actTemplates.sort(() => 0.5 - Math.random()).slice(0, 3);
+        document.getElementById('liturgy').innerHTML = acts.map(a => `
+            <div class="act-item">
+                <span class="act-date">${loc.isNear ? '即将举行 · COMING UP' : '每周固定 · WEEKLY'}</span>
+                <div style="font-size:15px; font-weight:500;">${a}</div>
+                <div style="font-size:11px; color:#999; margin-top:5px;">致力于为职场及在校青年提供深度的灵性支持。</div>
+            </div>
+        `).join('');
+
+        // 学术生成
+        document.getElementById('academic').innerHTML = `<p class="acad-text">${loc.acad}</p>`;
+
+        // 分享生成 (随机教友)
+        let commHtml = '';
+        for(let i=0; i<12; i++) {
+            const user = userPool[Math.floor(Math.random()*userPool.length)];
+            const text = phrasePool[Math.floor(Math.random()*phrasePool.length)];
+            commHtml += `
+                <div class="comment-item">
+                    <div class="user-info">
+                        <span class="user-name">@${user.n}</span>
+                        <span class="user-tag">${user.t}</span>
+                    </div>
+                    <div class="comment-text">"${text}"</div>
+                </div>
+            `;
+        }
+        document.getElementById('peers').innerHTML = commHtml;
+
+        window.scrollTo({ top: window.innerHeight * 0.4, behavior: 'smooth' });
+        switchSection('liturgy', document.querySelector('.tab-btn'));
+    }
+
+    function switchSection(id, el) {
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        el.classList.add('active');
+    }
+
+    window.onload = init;
+</script>
+
+</body>
+</html>

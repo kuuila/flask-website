@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>玫瑰经 40天灵修之旅</title>
+    <!-- 引入具有宗教神圣感的字体 -->
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;800&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* 拜占庭与圣母色调定义 */
+            --marian-blue: #0f1e3d;       /* 深邃夜空蓝 */
+            --marian-light: #2b4c8c;      /* 圣母袍色 */
+            --byz-gold: #c5a059;          /* 古董金 */
+            --byz-gold-bright: #ffd700;   /* 荣耀亮金 */
+            --byz-red: #5e0d0d;           /* 基督宝血红 */
+            --paper: #f4f1ea;             /* 羊皮纸白 */
+            
+            --glow-shadow: 0 0 20px rgba(197, 160, 89, 0.3);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            font-family: 'Cormorant Garamond', serif;
+            background-color: var(--marian-blue);
+            /* 背景：深蓝底色 + 微微的圣光渐变 */
+            background-image: radial-gradient(circle at 50% 30%, #1a3a6e 0%, var(--marian-blue) 70%);
+            color: var(--paper);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        /* 顶部装饰线：拜占庭风格边框 */
+        .top-border {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 6px;
+            background: linear-gradient(90deg, var(--byz-gold), var(--byz-red), var(--byz-gold));
+            z-index: 100;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        }
+
+        /* 主卡片：玻璃拟态 + 金边 */
+        .shrine-container {
+            width: 100%;
+            max-width: 400px;
+            background: rgba(15, 30, 61, 0.6);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(197, 160, 89, 0.3);
+            border-radius: 12px; /* 略微圆角，保持庄重 */
+            padding: 30px 20px;
+            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5), inset 0 0 30px rgba(0,0,0,0.2);
+            position: relative;
+        }
+
+        /* 四角装饰（模拟圣经封面金属角） */
+        .corner {
+            position: absolute;
+            width: 15px; height: 15px;
+            border-color: var(--byz-gold);
+            border-style: solid;
+            pointer-events: none;
+        }
+        .tl { top: 10px; left: 10px; border-width: 2px 0 0 2px; }
+        .tr { top: 10px; right: 10px; border-width: 2px 2px 0 0; }
+        .bl { bottom: 10px; left: 10px; border-width: 0 0 2px 2px; }
+        .br { bottom: 10px; right: 10px; border-width: 0 2px 2px 0; }
+
+        /* 标题区 */
+        .header { text-align: center; margin-bottom: 30px; }
+        .cross-icon {
+            font-size: 3rem;
+            background: linear-gradient(180deg, var(--byz-gold-bright), var(--byz-gold));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 10px rgba(197, 160, 89, 0.6));
+            margin-bottom: 10px;
+            animation: holy-breath 4s infinite ease-in-out;
+        }
+        h1 {
+            font-family: 'Cinzel', serif;
+            font-weight: 600;
+            font-size: 1.4rem;
+            letter-spacing: 3px;
+            color: var(--byz-gold);
+            text-transform: uppercase;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+        }
+        .subtitle {
+            font-size: 0.9rem;
+            color: #8faacd;
+            font-style: italic;
+            margin-top: 5px;
+        }
+
+        /* 圣光计时器 (Halo Timer) */
+        .halo-timer {
+            position: relative;
+            width: 260px;
+            height: 260px;
+            margin: 10px 0 40px 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        svg { 
+            transform: rotate(-90deg); 
+            width: 100%; height: 100%; 
+            filter: drop-shadow(0 0 15px rgba(197, 160, 89, 0.2));
+        }
+
+        /* 轨道：暗淡的金色 */
+        .track {
+            fill: none;
+            stroke: rgba(197, 160, 89, 0.1);
+            stroke-width: 4;
+        }
+
+        /* 进度条：辉煌的金色光环 */
+        .halo-progress {
+            fill: none;
+            stroke: url(#goldGradient); /* 使用SVG渐变 */
+            stroke-width: 6;
+            stroke-linecap: round; /* 圆头 */
+            stroke-dasharray: 754; /* 2*PI*120 */
+            stroke-dashoffset: 0;
+            transition: stroke-dashoffset 1s linear;
+        }
+
+        /* 计时器中心文字 */
+        .timer-content {
+            position: absolute;
+            text-align: center;
+            z-index: 10;
+        }
+        .timer-digits {
+            font-family: 'Cinzel', serif;
+            font-size: 3.5rem;
+            color: var(--paper);
+            font-weight: 400;
+            text-shadow: 0 0 20px rgba(197, 160, 89, 0.5);
+        }
+        .timer-state {
+            font-size: 1rem;
+            color: var(--byz-gold);
+            letter-spacing: 2px;
+            margin-top: -5px;
+            text-transform: uppercase;
+        }
+
+        /* 按钮设计：拜占庭风格 */
+        .btn-action {
+            background: linear-gradient(135deg, var(--byz-gold) 0%, #a07e3e 100%);
+            border: 1px solid var(--byz-gold-bright);
+            color: #2a1a00;
+            font-family: 'Cinzel', serif;
+            font-weight: 700;
+            font-size: 1.1rem;
+            padding: 15px 50px;
+            border-radius: 2px; /* 方正带一点点圆角 */
+            cursor: pointer;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.3);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            letter-spacing: 2px;
+        }
+        
+        /* 按钮光泽动画 */
+        .btn-action::after {
+            content: '';
+            position: absolute;
+            top: -50%; right: -50%; bottom: -50%; left: -50%;
+            background: linear-gradient(to bottom, rgba(229, 172, 142, 0), rgba(255,255,255,0.4) 50%, rgba(229, 172, 142, 0));
+            transform: rotateZ(60deg) translate(-5em, 7.5em);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .btn-action:hover::after, .btn-action:active::after {
+            opacity: 1;
+            transition: none; /* 瞬间触发 */
+        }
+        .btn-action:active { transform: translateY(2px); box-shadow: 0 5px 10px rgba(0,0,0,0.4); }
+        .btn-action.stop { background: transparent; border: 1px solid var(--byz-red); color: #d67c7c; box-shadow: none; font-size: 0.9rem; padding: 10px 30px; margin-top: 15px;}
+        .btn-action.completed { background: var(--marian-light); color: #fff; cursor: default; border-color: var(--marian-light); }
+
+        /* 马赛克进度日历 (Mosaic Calendar) */
+        .mosaic-section {
+            width: 100%;
+            margin-top: 40px;
+            border-top: 1px solid rgba(197, 160, 89, 0.2);
+            padding-top: 20px;
+        }
+        .mosaic-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            color: var(--byz-gold);
+            font-family: 'Cinzel', serif;
+            font-size: 0.85rem;
+        }
+        .mosaic-grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 6px;
+        }
+        
+        .tile {
+            aspect-ratio: 1;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 0.6rem;
+            color: rgba(255,255,255,0.3);
+            position: relative;
+            transition: all 0.6s ease;
+        }
+
+        /* 金色马赛克效果 (已完成) */
+        .tile.gold {
+            background: linear-gradient(135deg, #d4af37 0%, #f9e295 50%, #aa8525 100%);
+            border: 1px solid #ffe680;
+            color: #3d2b00;
+            box-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
+            transform: scale(1.05);
+            z-index: 1;
+        }
+        .tile.gold::before {
+            content: '✝'; /* 十字架 */
+            font-weight: bold;
+            font-size: 0.8rem;
+        }
+        .tile.gold span { display: none; }
+
+        /* 当前天 (Current) */
+        .tile.current {
+            border: 1px solid var(--byz-gold);
+            box-shadow: 0 0 5px var(--byz-gold);
+            animation: pulse-border 2s infinite;
+        }
+
+        /* 隐藏元素 */
+        .hidden { display: none !important; }
+
+        /* 动画 */
+        @keyframes holy-breath {
+            0%, 100% { filter: drop-shadow(0 0 10px rgba(197, 160, 89, 0.4)); transform: scale(1); }
+            50% { filter: drop-shadow(0 0 25px rgba(197, 160, 89, 0.8)); transform: scale(1.05); }
+        }
+        @keyframes pulse-border {
+            0% { border-color: rgba(197, 160, 89, 0.3); }
+            50% { border-color: rgba(197, 160, 89, 1); }
+            100% { border-color: rgba(197, 160, 89, 0.3); }
+        }
+
+        /* 状态文字 */
+        .status-message {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.7);
+            min-height: 1.5em;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="top-border"></div>
+
+    <div class="shrine-container">
+        <!-- 装饰角 -->
+        <div class="corner tl"></div><div class="corner tr"></div>
+        <div class="corner bl"></div><div class="corner br"></div>
+
+        <div class="header">
+            <div class="cross-icon">✝</div>
+            <h1>Rosarium</h1>
+            <div class="subtitle">40 Days Devotion</div>
+        </div>
+
+        <!-- 计时器部分 -->
+        <div class="halo-timer">
+            <svg viewBox="0 0 260 260">
+                <!-- 定义金色渐变 -->
+                <defs>
+                    <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" style="stop-color:#b8860b;stop-opacity:1" />
+                        <stop offset="50%" style="stop-color:#ffd700;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#b8860b;stop-opacity:1" />
+                    </linearGradient>
+                </defs>
+                <circle class="track" cx="130" cy="130" r="120"></circle>
+                <circle class="halo-progress" id="progress-halo" cx="130" cy="130" r="120"></circle>
+            </svg>
+            
+            <div class="timer-content">
+                <div class="timer-digits" id="time-display">20:00</div>
+                <div class="timer-state" id="timer-label">Pray</div>
+            </div>
+        </div>
+
+        <div id="controls">
+            <button id="btn-start" class="btn-action" onclick="startPrayer()">开始祈祷</button>
+            <button id="btn-stop" class="btn-action stop hidden" onclick="stopPrayer()">中断</button>
+            <button id="btn-done" class="btn-action completed hidden" disabled>今日已完成</button>
+        </div>
+
+        <div class="status-message" id="status-text">
+            万福玛利亚，满被圣宠者。
+        </div>
+
+        <!-- 进度马赛克 -->
+        <div class="mosaic-section">
+            <div class="mosaic-header">
+                <span>SPIRITUAL JOURNEY</span>
+                <span id="streak-text">0 / 40</span>
+            </div>
+            <div class="mosaic-grid" id="grid">
+                <!-- Javascript will fill this -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // 配置区 (Settings)
+        // ==========================================
+        
+        // 玫瑰经时长：20分钟 = 1200秒。
+        // 测试时可改为 10 (10秒) 以快速查看效果。
+        const DURATION_SECONDS = 1200; 
+        const TOTAL_DAYS = 40;
+
+        // ==========================================
+        // 核心逻辑 (Core Logic)
+        // ==========================================
+
+        const UI = {
+            timeDisplay: document.getElementById('time-display'),
+            halo: document.getElementById('progress-halo'),
+            btnStart: document.getElementById('btn-start'),
+            btnStop: document.getElementById('btn-stop'),
+            btnDone: document.getElementById('btn-done'),
+            statusText: document.getElementById('status-text'),
+            grid: document.getElementById('grid'),
+            streakText: document.getElementById('streak-text'),
+            timerLabel: document.getElementById('timer-label')
+        };
+
+        let state = {
+            timeLeft: DURATION_SECONDS,
+            timerId: null,
+            isRunning: false,
+            // 存储的数据结构
+            data: {
+                streak: 0,
+                lastDate: null, // "YYYY-MM-DD"
+                history: []
+            }
+        };
+
+        // 圆环周长 2 * PI * 120
+        const CIRCUMFERENCE = 754; 
+        UI.halo.style.strokeDasharray = `${CIRCUMFERENCE} ${CIRCUMFERENCE}`;
+
+        // 初始化
+        function init() {
+            loadData();
+            checkStreakIntegrity(); // 核心：检查断签
+            renderGrid();
+            updateDailyState();
+        }
+
+        // 加载数据
+        function loadData() {
+            const raw = localStorage.getItem('rosary_byzantine_v1');
+            if (raw) state.data = JSON.parse(raw);
+        }
+
+        // 保存数据
+        function saveData() {
+            localStorage.setItem('rosary_byzantine_v1', JSON.stringify(state.data));
+        }
+
+        // 检查断签逻辑 (Strict Check)
+        function checkStreakIntegrity() {
+            if (state.data.streak === 0 || !state.data.lastDate) return;
+
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            const last = new Date(state.data.lastDate);
+            last.setHours(0,0,0,0);
+
+            const diffMs = today - last;
+            const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+            // 0 = 今天, 1 = 昨天, >1 = 断签
+            if (diffDays > 1) {
+                // 断签重置
+                state.data.streak = 0;
+                // 不清除 lastDate 以避免重复逻辑错误，但streak归零已重置进度
+                saveData();
+                UI.statusText.innerText = "灵修中断，请重新开始这神圣的旅程。";
+                UI.statusText.style.color = "#d67c7c"; // 红色警告
+            }
+        }
+
+        // 格式化时间
+        function formatTime(sec) {
+            const m = Math.floor(sec / 60);
+            const s = sec % 60;
+            return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        }
+
+        // 渲染日历网格
+        function renderGrid() {
+            UI.grid.innerHTML = '';
+            UI.streakText.innerText = `${state.data.streak} / ${TOTAL_DAYS}`;
+
+            for (let i = 1; i <= TOTAL_DAYS; i++) {
+                const div = document.createElement('div');
+                div.className = 'tile';
+                
+                const span = document.createElement('span');
+                span.innerText = i;
+                div.appendChild(span);
+
+                if (i <= state.data.streak) {
+                    div.classList.add('gold');
+                } else if (i === state.data.streak + 1) {
+                    // 如果今天还没打卡，显示当前边框
+                    const today = new Date().toISOString().split('T')[0];
+                    if (state.data.lastDate !== today) {
+                        div.classList.add('current');
+                    }
+                }
+                UI.grid.appendChild(div);
+            }
+        }
+
+        // 更新每日UI状态
+        function updateDailyState() {
+            const today = new Date().toISOString().split('T')[0];
+            UI.timeDisplay.innerText = formatTime(DURATION_SECONDS);
+            
+            // 重置圆环为满
+            UI.halo.style.strokeDashoffset = 0;
+
+            if (state.data.lastDate === today) {
+                // 今日已完成
+                UI.btnStart.classList.add('hidden');
+                UI.btnStop.classList.add('hidden');
+                UI.btnDone.classList.remove('hidden');
+                
+                UI.timeDisplay.innerText = "AMEN";
+                UI.timerLabel.innerText = "Completed";
+                UI.halo.style.strokeDashoffset = CIRCUMFERENCE; // 空圈或满圈视审美而定，这里设为空表示完成
+                UI.statusText.innerText = "今日功课已毕，主与你同在。";
+                UI.statusText.style.color = "var(--byz-gold)";
+            } else {
+                // 今日未完成
+                UI.btnStart.classList.remove('hidden');
+                UI.btnDone.classList.add('hidden');
+                UI.timerLabel.innerText = "Ready";
+            }
+        }
+
+        // 开始
+        function startPrayer() {
+            if (state.isRunning) return;
+
+            // 保持屏幕常亮 (Modern Browsers)
+            if ('wakeLock' in navigator) {
+                navigator.wakeLock.request('screen').catch(console.error);
+            }
+
+            state.isRunning = true;
+            state.timeLeft = DURATION_SECONDS;
+            
+            UI.btnStart.classList.add('hidden');
+            UI.btnStop.classList.remove('hidden');
+            UI.timerLabel.innerText = "Praying";
+            UI.statusText.innerText = "请保持专注，心向上主...";
+            UI.statusText.style.color = "#8faacd";
+
+            UI.timerId = setInterval(() => {
+                state.timeLeft--;
+                UI.timeDisplay.innerText = formatTime(state.timeLeft);
+
+                // 更新光环：随着时间流逝，光环慢慢消退（或闭合）
+                // 这里设计为：开始是满的金色，慢慢减少
+                const offset = CIRCUMFERENCE - (state.timeLeft / DURATION_SECONDS) * CIRCUMFERENCE;
+                UI.halo.style.strokeDashoffset = -offset;
+
+                if (state.timeLeft <= 0) {
+                    completePrayer();
+                }
+            }, 1000);
+        }
+
+        // 中断
+        function stopPrayer() {
+            clearInterval(UI.timerId);
+            state.isRunning = false;
+            updateDailyState(); // 重置回初始状态
+            UI.btnStop.classList.add('hidden');
+            UI.statusText.innerText = "祈祷中断，调整呼吸，随时重新开始。";
+        }
+
+        // 完成
+        function completePrayer() {
+            clearInterval(UI.timerId);
+            state.isRunning = false;
+
+            const today = new Date().toISOString().split('T')[0];
+            state.data.lastDate = today;
+            state.data.streak++;
+            saveData();
+
+            updateDailyState();
+            renderGrid();
+
+            // 简单的完成动画反馈
+            UI.statusText.innerText = "感谢天主。";
+            if (state.data.streak >= TOTAL_DAYS) {
+                alert("Gloria in Excelsis Deo! 你已完成40天的玫瑰经灵修！");
+            }
+        }
+
+        // 启动
+        init();
+
+        // 监听页面可见性（处理过夜不刷新问题）
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                checkStreakIntegrity();
+                // 仅当今天状态不对时才刷新UI
+                const today = new Date().toISOString().split('T')[0];
+                if (state.data.lastDate !== today && !UI.btnDone.classList.contains('hidden')) {
+                     // 到了新的一天，但界面还显示“已完成” -> 刷新
+                     location.reload();
+                } else if (state.data.lastDate !== today && !state.isRunning) {
+                     renderGrid(); // 更新当前边框位置
+                }
+            }
+        });
+
+    </script>
+</body>
+</html>

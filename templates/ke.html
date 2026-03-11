@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>柯兰焰 | Ke Lanyan</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@200;400;700&family=Playfair+Display:ital@0;1&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0a0a0a;
+            --text: #e0e0e0;
+            --accent: #c5a059; /* 微光金 */
+            --glass: rgba(255, 255, 255, 0.03);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Noto Serif SC', serif;
+            line-height: 1.8;
+            overflow-x: hidden;
+        }
+         .wechat-share-img {
+            position: absolute;
+            top: -9999px;
+            left: -9999px;
+            width: 300px;
+            height: 300px;
+        }
+
+        /* 导航栏 */
+        nav {
+            position: fixed;
+            top: 0; width: 100%;
+            padding: 30px 50px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 1000;
+            background: linear-gradient(to bottom, var(--bg), transparent);
+        }
+
+        .logo { font-size: 1.5rem; font-weight: 700; letter-spacing: 5px; color: var(--accent); }
+        .nav-links a {
+            color: var(--text);
+            text-decoration: none;
+            margin-left: 30px;
+            font-size: 0.9rem;
+            letter-spacing: 2px;
+            transition: 0.3s;
+        }
+        .nav-links a:hover { color: var(--accent); }
+
+        /* 英雄背景区 */
+        .hero {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            position: relative;
+            background: radial-gradient(circle at center, #1a1a1a 0%, #0a0a0a 100%);
+        }
+
+        .hero h1 { font-size: 5rem; letter-spacing: 20px; font-weight: 200; margin-bottom: 20px; }
+        .hero p { font-size: 1.2rem; letter-spacing: 8px; color: var(--accent); opacity: 0.8; }
+        
+        /* 装饰微光 */
+        .light-streak {
+            position: absolute;
+            width: 1px; height: 300px;
+            background: var(--accent);
+            top: 20%; left: 30%;
+            box-shadow: 0 0 20px var(--accent);
+            opacity: 0.3;
+            transform: rotate(25deg);
+        }
+
+        /* 章节标题 */
+        .section-title {
+            text-align: center;
+            margin: 100px 0 60px;
+        }
+        .section-title h2 { font-size: 2rem; letter-spacing: 10px; color: var(--accent); font-weight: 400; }
+        .section-title .eng { font-family: 'Playfair Display', serif; font-style: italic; font-size: 1rem; color: #666; }
+
+        .container { max-width: 1100px; margin: 0 auto; padding: 0 20px; }
+
+        /* 艺术理念区 */
+        .statement {
+            background: var(--glass);
+            padding: 80px 50px;
+            border: 1px solid rgba(197, 160, 89, 0.1);
+            position: relative;
+        }
+        .statement blockquote {
+            font-size: 1.2rem;
+            margin-bottom: 40px;
+            border-left: 2px solid var(--accent);
+            padding-left: 30px;
+            color: #fff;
+        }
+
+        /* 作品墙 */
+        .works-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+        }
+        .work-item {
+            position: relative;
+            overflow: hidden;
+            background: #111;
+        }
+        .work-item img {
+            width: 100%; height: auto;
+            transition: 1s;
+            filter: grayscale(20%);
+        }
+        .work-item:hover img { transform: scale(1.05); filter: grayscale(0%); }
+        .work-info {
+            padding: 20px 0;
+            border-top: 1px solid #222;
+        }
+        .work-info h3 { font-size: 1rem; font-weight: 400; color: var(--accent); }
+        .work-info p { font-size: 0.8rem; color: #888; }
+
+        /* 履历区 */
+        .resume-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 100px;
+        }
+        .resume-section h4 { border-bottom: 1px solid var(--accent); padding-bottom: 10px; margin-bottom: 20px; font-weight: 400; }
+        .resume-item { margin-bottom: 15px; font-size: 0.9rem; display: flex; }
+        .resume-year { min-width: 80px; color: var(--accent); font-family: 'Playfair Display', serif; }
+
+        footer {
+            padding: 100px 0 50px;
+            text-align: center;
+            border-top: 1px solid #222;
+            margin-top: 150px;
+        }
+        .contact-btn {
+            display: inline-block;
+            padding: 15px 40px;
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            text-decoration: none;
+            transition: 0.4s;
+            margin-top: 30px;
+        }
+        .contact-btn:hover { background: var(--accent); color: #000; }
+
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 3rem; }
+            .resume-grid { grid-template-columns: 1fr; gap: 50px; }
+            nav { padding: 20px; }
+        }
+    </style>
+    <meta property="og:title" content="柯兰焰">
+    <meta property="og:description" content="艺术家简介">
+    <meta property="og:image" content="http://www.mxle.net/static/ke/ke0_i.jpeg">
+    <meta property="og:type" content="website">
+</head>
+<body>
+<!-- 微信抓取用的缩略图 -->
+<!-- <img src="http://www.mxle.net/static/ke/ke0_i.jpeg" class="wechat-share-img" alt="Share Icon"> -->
+<nav>
+    <div class="logo">柯兰焰</div>
+    <div class="nav-links">
+        <a href="#about">关于</a>
+        <a href="#philosophy">理念</a>
+        <a href="#works">作品</a>
+        <a href="#resume">履历</a>
+    </div>
+</nav>
+
+<section class="hero">
+    <div class="light-streak"></div>
+    <h1>柯兰焰</h1>
+    <p>KE LANYAN</p>
+    <div style="margin-top: 40px; font-size: 0.8rem; opacity: 0.5;">上海美术学院博士在读 | 当代绘画艺术实践</div>
+</section>
+
+<div class="container" id="about">
+    <div class="section-title">
+        <h2>艺术家简介</h2>
+        <div class="eng">Biography</div>
+    </div>
+    <div style="text-align: center; max-width: 700px; margin: 0 auto;">
+        <p>1998年生于福建宁德。现为上海大学上海美术学院攻读博士研究生。柯兰焰的创作历经不同阶段，始终致力于探索绘画作为情绪出口的可能性，并在媒介的物质性与个人生命经验之间建立深刻的契合点。</p>
+    </div>
+</div>
+
+<div class="container" id="philosophy">
+    <div class="section-title">
+        <h2>创作理念</h2>
+        <div class="eng">Artistic Philosophy</div>
+    </div>
+    <div class="statement">
+        <blockquote>
+            “每一位真诚面对绘画的人，都无从逃避言说真实的责任，这近乎一种自我治理的伦理要求。”
+        </blockquote>
+        <p style="font-size: 0.95rem;">
+            在他看来，绘画不仅是视觉的呈现，更是对生活背后“看不见的东西”的接近。他近期研究聚焦于媒介载体如何承载信息，通过研究半吸收石膏底、坦培拉乳液等古老技法，在当代语境下重新审视绘画的本质。他主张“观察先于语言”，回归事物本身，让绘画成为认清“自我（what one is）”的路径。
+        </p>
+    </div>
+</div>
+
+<div class="container" id="works">
+    <div class="section-title">
+        <h2>代表作品</h2>
+        <div class="eng">Selected Works</div>
+    </div>
+    <div class="works-grid">
+        <!-- 作品1 -->
+        <div class="work-item">
+            <img src="/static/ke/ke1_web.jpeg" alt="游荡者">
+            <div class="work-info">
+                <h3>《游荡者》, 2025</h3>
+                <p>布面油画, 210 × 170cm</p>
+            </div>
+        </div>
+        <!-- 作品2 -->
+        <div class="work-item">
+            <img src="/static/ke/ke2_web.jpeg" alt="画室">
+            <div class="work-info">
+                <h3>《画室》, 2024</h3>
+                <p>布面丙烯, 340 × 220cm</p>
+            </div>
+        </div>
+        <!-- 作品3 -->
+        <div class="work-item">
+            <img src="/static/ke/ke3_web.jpeg" alt="生活世界神话">
+            <div class="work-info">
+                <h3>《生活世界神话》, 2025</h3>
+                <p>布面丙烯、油画棒, 300 × 140cm</p>
+            </div>
+        </div>
+        <!-- 作品4 -->
+        <div class="work-item">
+            <img src="/static/ke/ke4_web.jpeg" alt="在客西马尼">
+            <div class="work-info">
+                <h3>《在客西马尼》, 2022</h3>
+                <p>综合材料, 600 × 210cm</p>
+            </div>
+        </div>
+        <!-- 作品5 -->
+        <div class="work-item">
+            <img src="/static/ke/ke5.jpg" alt="在客西马尼">
+            <div class="work-info">
+                <h3>《宗祠》, 2022</h3>
+                <p>布面丙烯，90 × 120cm</p>
+            </div>
+        </div>
+        <!-- 作品6 -->
+        <div class="work-item">
+            <img src="/static/ke/ke6.jpg" alt="在客西马尼">
+            <div class="work-info">
+                <h3>《去大马士革路上的转变》, 2022</h3>
+                <p>布面丙烯, 177 × 130cm</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container" id="resume">
+    <div class="section-title">
+        <h2>学术履历</h2>
+        <div class="eng">Academic & Professional Timeline</div>
+    </div>
+    <div class="resume-grid">
+        <div class="resume-section">
+            <h4>教育背景 / Education</h4>
+            <div class="resume-item"><span class="resume-year">2024 - </span><span>上海大学上海美术学院, 博士在读</span></div>
+            <div class="resume-item"><span class="resume-year">2021 - 24</span><span>天津美术学院油画系, 硕士毕业</span></div>
+            <div class="resume-item"><span class="resume-year">2017 - 21</span><span>天津美术学院壁画系, 本科毕业</span></div>
+        </div>
+        <div class="resume-section">
+            <h4>主要奖项 / Awards</h4>
+            <div class="resume-item"><span class="resume-year">2024</span><span>四川美术学院 罗中立艺术奖学金</span></div>
+            <div class="resume-item"><span class="resume-year">2024</span><span>天津美术学院 学院奖</span></div>
+            <div class="resume-item"><span class="resume-year">2023</span><span>李骆公艺术奖学金</span></div>
+            <div class="resume-item"><span class="resume-year">2022</span><span>英国伦敦 Boomer Gallery NEW ARTIST</span></div>
+        </div>
+    </div>
+</div>
+
+<footer>
+    <div class="logo">KE LANYAN</div>
+    <p style="font-size: 0.8rem; margin-top: 20px; opacity: 0.6;">当代绘画实践 · 研究型艺术项目</p>
+    <a href="mailto:goldenkhan9484@gmail.com" class="contact-btn">联系艺术家 / CONTACT</a>
+    <div style="margin-top: 50px; font-size: 0.7rem; color: #444;">© 2026 Ke Lanyan. All Rights Reserved.</div>
+</footer>
+
+<script>
+    // 简单的平滑滚动交互
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            document.querySelector(this.getAttribute('href')).scrollIntoView({
+                behavior: 'smooth'
+            });
+        });
+    });
+</script>
+
+</body>
+</html>

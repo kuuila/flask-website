@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SURHI：上海城市心灵韧性计划</title>
+    <style>
+        /* --- 1. 全局变量与重置 --- */
+        :root {
+            --bg-color: #F5F2EB;       /* 晨雾米色 - 温暖包容 */
+            --text-main: #2C3E50;      /* 深岩灰 - 理性沉稳 */
+            --accent-color: #C07858;   /* 陶土红 - 充满生命力 */
+            --gold-color: #BFA46F;     /* 哑光金 - 神圣感 */
+            --font-serif: "Songti SC", "Noto Serif SC", serif;
+            --font-sans: -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: var(--font-sans);
+            overflow: hidden; /* 禁止原生滚动，使用容器滚动 */
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* --- 2. 滚动容器 (Scroll Snap) --- */
+        .h5-wrapper {
+            height: 100vh;
+            width: 100vw;
+            overflow-y: scroll;
+            scroll-snap-type: y mandatory;
+            scroll-behavior: smooth;
+        }
+
+        section {
+            height: 100vh;
+            width: 100vw;
+            scroll-snap-align: start;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 30px;
+            overflow: hidden;
+            background: var(--bg-color);
+        }
+
+        /* --- 3. 视觉组件 --- */
+        
+        /* 标题排版 */
+        h1 {
+            font-family: var(--font-serif);
+            font-size: 2.4rem;
+            line-height: 1.2;
+            margin-bottom: 10px;
+            color: var(--text-main);
+            font-weight: 700;
+        }
+        
+        .sub-title {
+            font-size: 0.8rem;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            color: var(--accent-color);
+            margin-bottom: 30px;
+            font-weight: 600;
+        }
+
+        h2 {
+            font-family: var(--font-serif);
+            font-size: 1.5rem;
+            color: var(--text-main);
+            margin-bottom: 1rem;
+            position: relative;
+            display: inline-block;
+        }
+        
+        h2::after {
+            content: '';
+            display: block;
+            width: 40px;
+            height: 2px;
+            background: var(--accent-color);
+            margin: 10px auto 0;
+        }
+
+        p {
+            font-size: 0.95rem;
+            line-height: 1.8;
+            color: rgba(44, 62, 80, 0.8);
+            max-width: 90%;
+            margin-bottom: 1.5rem;
+            text-align: justify; /* 两端对齐更具杂志感 */
+            text-align-last: center;
+        }
+
+        .highlight {
+            color: var(--accent-color);
+            font-weight: bold;
+        }
+
+        /* 底部导航箭头 */
+        .arrow-down {
+            position: absolute;
+            bottom: 25px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 24px;
+            height: 24px;
+            opacity: 0.6;
+            animation: float 2s infinite ease-in-out;
+            z-index: 10;
+        }
+        .arrow-down path {
+            fill: var(--text-main);
+        }
+
+        /* --- 4. 抽象图形 (CSS Art) --- */
+        
+        /* P1: 光环 */
+        .halo-circle {
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(192,120,88,0.1) 0%, rgba(245,242,235,0) 70%);
+            border: 1px solid rgba(192,120,88,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 2rem;
+            position: relative;
+        }
+        .halo-inner {
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            border: 1px solid rgba(44,62,80,0.1);
+        }
+
+        /* P2: 拱门 (圣所) */
+        .arch-shape {
+            width: 100px;
+            height: 140px;
+            border: 2px solid var(--text-main);
+            border-bottom: 0;
+            border-top-left-radius: 50px;
+            border-top-right-radius: 50px;
+            margin-bottom: 2rem;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+        }
+        .arch-door {
+            width: 40px;
+            height: 60px;
+            background: var(--accent-color);
+            border-top-left-radius: 20px;
+            border-top-right-radius: 20px;
+            opacity: 0.2;
+        }
+
+        /* P3: 连接 (团契) */
+        .hands-concept {
+            display: flex;
+            gap: -10px;
+            margin-bottom: 2rem;
+            align-items: center;
+        }
+        .circle-node {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: var(--text-main);
+            opacity: 0.1;
+            transition: all 0.5s;
+        }
+        .circle-node.active {
+            background: var(--accent-color);
+            opacity: 0.8;
+            transform: scale(1.1);
+        }
+
+        /* P4: 暂停 (安息) */
+        .pause-icon {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 2rem;
+            cursor: pointer;
+        }
+        .bar {
+            width: 15px;
+            height: 60px;
+            background-color: var(--text-main);
+            border-radius: 5px;
+            transition: height 0.5s;
+        }
+        .paused .bar {
+            height: 20px; /* 变成圆点/短线 */
+            background-color: var(--accent-color);
+        }
+
+        /* --- 5. 动画类 --- */
+        .fade-in-up {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        
+        section.active .fade-in-up {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        /* 依次延迟 */
+        .delay-1 { transition-delay: 0.1s; }
+        .delay-2 { transition-delay: 0.2s; }
+        .delay-3 { transition-delay: 0.3s; }
+        .delay-4 { transition-delay: 0.4s; }
+
+        @keyframes float {
+            0%, 100% { transform: translate(-50%, 0); }
+            50% { transform: translate(-50%, 10px); }
+        }
+
+        /* 按钮样式 */
+        .btn-outline {
+            padding: 12px 30px;
+            border: 1px solid var(--text-main);
+            background: transparent;
+            color: var(--text-main);
+            font-size: 0.9rem;
+            text-decoration: none;
+            border-radius: 50px;
+            margin-top: 20px;
+            transition: all 0.3s;
+        }
+        .btn-outline:active {
+            background: var(--text-main);
+            color: #fff;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="h5-wrapper" id="container">
+
+        <!-- Page 1: 封面 - 愿景 -->
+        <section class="active">
+            <div class="halo-circle fade-in-up delay-1">
+                <div class="halo-inner"></div>
+            </div>
+            <div class="sub-title fade-in-up delay-2">PROJECT SURHI</div>
+            <h1 class="fade-in-up delay-3">神恩复兴在上海<br>从"魔都"走向"恩典之都"计划</h1>
+            <p class="fade-in-up delay-4" style="font-style: italic; opacity: 0.6;">
+                From "Magic City" to "City of Grace"
+            </p>
+            <div style="height: 1px; width: 60px; background: var(--accent-color); margin: 20px auto;" class="fade-in-up delay-4"></div>
+            <p class="fade-in-up delay-4" style="font-size: 0.8rem;">
+                在算法与效率之外，<br>为这座城市寻找灵魂的安息处。
+            </p>
+            
+            <svg class="arrow-down" viewBox="0 0 24 24"><path d="M12 16l-6-6h12z"/></svg>
+        </section>
+
+        <!-- Page 2: 空间 - 圣所网络 -->
+        <section>
+            <div class="arch-shape fade-in-up delay-1">
+                <div class="arch-door"></div>
+            </div>
+            <h2 class="fade-in-up delay-2">空间 · 避难所</h2>
+            <p class="fade-in-up delay-3">
+                <b>“这不只是建筑，是城市的留白。”</b>
+            </p>
+            <p class="fade-in-up delay-4">
+                推行<b>[敞开之门]</b>计划。<br>
+                让徐家汇的老教堂庭院，<br>
+                成为白领午间的<span class="highlight">静默花园</span>。<br>
+                在邬达克的穹顶下，<br>
+                听见内心的声音。
+            </p>
+            <div class="sub-title fade-in-up delay-4" style="margin-top:20px; font-size: 0.6rem;">URBAN SANCTUARIES</div>
+            <svg class="arrow-down" viewBox="0 0 24 24"><path d="M12 16l-6-6h12z"/></svg>
+        </section>
+
+        <!-- Page 3: 关系 - 打破阶层 -->
+        <section>
+            <div class="hands-concept fade-in-up delay-1" id="connectNodes">
+                <div class="circle-node"></div>
+                <div class="circle-node" style="width: 80px; height: 80px; opacity: 0.15;"></div>
+                <div class="circle-node"></div>
+            </div>
+            <h2 class="fade-in-up delay-2">关系 · 团契</h2>
+            <p class="fade-in-up delay-3">
+                <b>“我们不施舍，我们分享。”</b>
+            </p>
+            <p class="fade-in-up delay-4">
+                从“五饼二鱼”到<b>[社区冰箱]</b>。<br>
+                外企高管与快递小哥共享晚餐。<br>
+                在打破隔阂的<b>“技能银行”</b>里，<br>
+                <span class="highlight">每个人都是被需要的。</span>
+            </p>
+            
+            <button class="btn-outline fade-in-up delay-4" onclick="toggleConnect()">点击连接彼此</button>
+            <svg class="arrow-down" viewBox="0 0 24 24"><path d="M12 16l-6-6h12z"/></svg>
+        </section>
+
+        <!-- Page 4: 时间 - 城市安息 -->
+        <section>
+            <div class="pause-icon fade-in-up delay-1" id="pauseBtn" onclick="togglePause()">
+                <div class="bar"></div>
+                <div class="bar"></div>
+            </div>
+            <h2 class="fade-in-up delay-2">时间 · 安息日</h2>
+            <p class="fade-in-up delay-3">
+                <b>“停下，是为了走得更远。”</b>
+            </p>
+            <p class="fade-in-up delay-4">
+                签署<b>[城市离线协议]</b>。<br>
+                每周日清晨的“无算法时间”。<br>
+                关闭手机，回归家庭。<br>
+                在疯狂的转速中，<br>
+                <span class="highlight">找回生命的节拍。</span>
+            </p>
+            <p id="pauseText" style="font-size: 0.8rem; opacity: 0; transition: opacity 0.5s; color: var(--accent-color);">已开启静音模式 (Shh...)</p>
+            <svg class="arrow-down" viewBox="0 0 24 24"><path d="M12 16l-6-6h12z"/></svg>
+        </section>
+
+        <!-- Page 5: 路线图 & 结语 -->
+        <section>
+            <div class="halo-circle fade-in-up delay-1" style="width: 100px; height: 100px;">
+                <div class="halo-inner" style="width: 80px; height: 80px; background: var(--accent-color); opacity: 0.2; border:none;"></div>
+            </div>
+            <h2 class="fade-in-up delay-2">实施 · 酵母效应</h2>
+            <div style="text-align: left; margin-bottom: 2rem;" class="fade-in-up delay-3">
+                <p style="text-align: left; margin-bottom: 10px;">
+                    <strong>Phase 1:</strong> 连接者唤醒<br>
+                    <span style="font-size: 0.8rem; opacity: 0.7;">动员海归与社区领袖成为“盐与光”</span>
+                </p>
+                <p style="text-align: left; margin-bottom: 10px;">
+                    <strong>Phase 2:</strong> 示范区共建<br>
+                    <span style="font-size: 0.8rem; opacity: 0.7;">徐汇/碧云社区试点“无墙教堂”</span>
+                </p>
+            </div>
+            
+            <p class="fade-in-up delay-4" style="font-weight: bold; color: var(--text-main);">
+                这不仅是规划，<br>这是对人性的温柔回应。
+            </p>
+
+            <a href="#" class="btn-outline fade-in-up delay-4" style="border-color: var(--accent-color); color: var(--accent-color);">加入计划 / Join Us</a>
+            
+            <footer style="position: absolute; bottom: 20px; font-size: 0.6rem; opacity: 0.4;">
+                © 2026 Shanghai Urban Spirit Lab
+            </footer>
+        </section>
+
+    </div>
+
+    <script>
+        // 1. 滚动监听 (Intersection Observer)
+        const sections = document.querySelectorAll('section');
+        
+        const observerOptions = {
+            threshold: 0.5 // 当50%可见时触发
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('active');
+                    // 重置某些交互状态
+                    if(entry.target.querySelector('#pauseBtn')) {
+                        document.getElementById('pauseBtn').classList.remove('paused');
+                        document.getElementById('pauseText').style.opacity = 0;
+                    }
+                }
+            });
+        }, observerOptions);
+
+        sections.forEach(section => {
+            observer.observe(section);
+        });
+
+        // 2. 交互逻辑：连接彼此
+        function toggleConnect() {
+            const nodes = document.querySelectorAll('.circle-node');
+            nodes.forEach(node => {
+                node.classList.add('active');
+            });
+            setTimeout(() => {
+                nodes.forEach(node => node.classList.remove('active'));
+            }, 1000);
+        }
+
+        // 3. 交互逻辑：暂停时间
+        function togglePause() {
+            const btn = document.getElementById('pauseBtn');
+            const text = document.getElementById('pauseText');
+            btn.classList.toggle('paused');
+            
+            if(btn.classList.contains('paused')) {
+                text.style.opacity = 1;
+            } else {
+                text.style.opacity = 0;
+            }
+        }
+    </script>
+</body>
+</html>
